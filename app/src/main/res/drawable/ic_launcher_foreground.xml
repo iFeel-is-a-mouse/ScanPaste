@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+    <!-- QR dots in fox orange -->
+    <path android:fillColor="#FF6B35" android:pathData="M30,30 L46,30 L46,46 L30,46 Z M34,34 L42,34 L42,42 L34,42 Z" />
+    <path android:fillColor="#FF6B35" android:pathData="M62,30 L78,30 L78,46 L62,46 Z M66,34 L74,34 L74,42 L66,42 Z" />
+    <path android:fillColor="#FF6B35" android:pathData="M30,62 L46,62 L46,78 L30,78 Z M34,66 L42,66 L42,74 L34,74 Z" />
+    <path android:fillColor="#FF6B35" android:pathData="M66,58 L70,58 L70,66 L78,66 L78,70 L70,70 L70,78 L66,78 L66,70 L58,70 L58,66 L66,66 Z" />
+</vector>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Rabbit Jump</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;background:#1a1a2e;color:#fff;font-family:'Courier New',monospace;gap:0}
+  .topbar{position:fixed;top:50px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;z-index:10;height:44px}
+  .back-btn{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer}
+  .best{color:#ffd700;font-size:13px}
+  pre{font-size:24px;line-height:1.2;margin:0;user-select:none;min-height:0}
+  .road{color:rgba(255,255,255,.25)}
+  .status{color:#ffd700;font-size:22px;min-height:1.3em}
+  .speed{color:rgba(255,255,255,.4);font-size:14px}
+  button{font-size:20px;padding:10px 36px;border:none;border-radius:24px;
+    background:#ff8c5a;color:#fff;font-weight:bold;cursor:pointer;margin-top:10px}
+  button:active{transform:scale(.95)}
+  button:disabled{opacity:.45;cursor:default}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="goBack()">← 返回</button>
+  <div class="best" id="bestDisplay">🏆 --</div>
+</div>
+<pre id="air"></pre>
+<pre id="chars"></pre>
+<pre id="ground" class="road"></pre>
+<pre id="pangram" class="road"></pre>
+<pre id="status" class="status"></pre>
+<div class="speed" id="speedInfo"></div>
+<button id="btnJump">跳跃</button>
+
+<script>
+'use strict';
+
+/* ────────────── 游戏配置（从 game.txt 加载，带默认值兜底） ────────────── */
+var RABBIT  = '🐰';
+var FOX     = '🦊';
+var PANGRAM = 'The cute rabbit jumps over the lazy fox';
+
+function loadGameConfig() {
+  if (window.Android && typeof Android.getGame === 'function') {
+    var data = Android.getGame();
+    if (data) {
+      var lines = data.split('\n');
+      if (lines.length >= 1 && lines[0].trim()) RABBIT  = lines[0].trim();
+      if (lines.length >= 2 && lines[1].trim()) FOX     = lines[1].trim();
+      if (lines.length >= 3 && lines[2].trim()) PANGRAM = lines[2].trim();
+    }
+  }
+}
+
+/* ────────────── 常量 ────────────── */
+var COLS       = 30;
+var FOX_POS    = 15;
+var FPS        = 10;
+var FRAME_MS   = 1000 / FPS;
+var JUMP_DIST  = 5;
+var JUMP_FRAMES= 4;
+var ROAD       = '~*';
+
+/* ────────────── DOM 引用 ────────────── */
+var air       = document.getElementById('air');
+var chars     = document.getElementById('chars');
+var ground    = document.getElementById('ground');
+var pangram   = document.getElementById('pangram');
+var statusEl  = document.getElementById('status');
+var speedInfo = document.getElementById('speedInfo');
+var btn       = document.getElementById('btnJump');
+var bestDisplay = document.getElementById('bestDisplay');
+
+/* ────────────── 游戏状态 ────────────── */
+var rabbitPos  = 0;
+var posAccum   = 0;
+var rabbitState= 'walk';       // 'walk' | 'jump' | 'dead'
+var jumpStart  = 0;
+var jumpFrame  = 0;
+var speed      = 0.5;
+var level      = 1;
+var bestLevel  = 0;
+var bestTime   = '';
+
+/* ────────────── Android 桥接 ────────────── */
+function goBack() {
+  if (window.Android && typeof Android.back === 'function') {
+    Android.back();
+  }
+}
+
+function loadBest() {
+  if (window.Android && typeof Android.getBest === 'function') {
+    var data = Android.getBest();
+    if (data) {
+      var parts = data.split(',');
+      bestLevel = parseInt(parts[0], 10) || 0;
+      bestTime  = parts[1] || '';
+    }
+  }
+  updateBestDisplay();
+}
+
+function updateBestDisplay() {
+  if (bestLevel > 0) {
+    bestDisplay.textContent = '\u{1F3C6} ' + bestLevel + '\u5173 ' + bestTime;
+  } else {
+    bestDisplay.textContent = '\u{1F3C6} --';
+  }
+}
+
+function updateButtonText() {
+  btn.textContent = RABBIT + ' 跳跃';
+}
+
+function saveBest() {
+  var now     = new Date();
+  var timeStr = now.getFullYear() + '-' +
+    pad2(now.getMonth() + 1) + '-' +
+    pad2(now.getDate()) + ' ' +
+    pad2(now.getHours()) + ':' +
+    pad2(now.getMinutes()) + ':' +
+    pad2(now.getSeconds());
+
+  if (level > bestLevel) {
+    bestLevel = level;
+    bestTime  = timeStr;
+    updateBestDisplay();
+    statusEl.textContent = '\u{1F389} \u65B0\u7EAA\u5F55\uFF01\u7B2C' + bestLevel + '\u5173 ' + bestTime;
+    if (window.Android && typeof Android.saveBest === 'function') {
+      Android.saveBest(bestLevel + ',' + bestTime);
+    }
+  }
+}
+
+/* ────────────── 工具函数 ────────────── */
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+/* ────────────── 提示系统 ────────────── */
+function showJumpHint() {
+  if (rabbitPos < 11) { statusEl.textContent = '别瞎跳'; return; }
+  if (rabbitPos > 14) { statusEl.textContent = '别高兴'; return; }
+  var landing = jumpStart + JUMP_DIST;
+  var gap     = landing - FOX_POS;
+
+  if (gap >= 4)       { statusEl.textContent = '\u{1F3AF} \u7CBE\u51C6\uFF01'; }
+  else if (gap >= 3)  { statusEl.textContent = '\u{1F31F} \u592A\u68D2\uFF01'; }
+  else if (gap >= 2)  { statusEl.textContent = '\u2728 \u7CBE\u5F69\uFF01'; }
+  else if (gap >= 1)  { statusEl.textContent = '\u{1F630} \u592A\u9669\uFF01'; }
+}
+
+function hideHint() {
+  statusEl.textContent = '';
+}
+
+/* ────────────── 初始化 ────────────── */
+function init() {
+  rabbitPos   = 0;
+  posAccum    = -speed + 0.01;
+  rabbitState = 'walk';
+  jumpStart   = 0;
+  jumpFrame   = 0;
+  btn.disabled = false;
+  updateButtonText();
+  hideHint();
+  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+}
+
+function fullReset() {
+  speed = 0.5;
+  level = 1;
+  posAccum = -speed + 0.01;
+  rabbitPos = 0;
+  rabbitState = 'walk';
+  jumpStart = 0;
+  jumpFrame = 0;
+  btn.disabled = false;
+  updateButtonText();
+  hideHint();
+  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+}
+
+function nextLevel() {
+  level++;
+  speed *= 1.2;
+  saveBest();
+  statusEl.textContent = '\u{1F389} \u901A\u5173\uFF01'; setTimeout(hideHint, 1000);
+  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+  rabbitPos   = 0;
+  posAccum    = -speed + 0.01;
+  rabbitState = 'walk';
+  jumpStart   = 0;
+  jumpFrame   = 0;
+  btn.disabled = false;
+  updateButtonText();
+}
+
+/* ────────────── 跳跃 ────────────── */
+function jump() {
+  if (rabbitState === 'dead') { fullReset(); return; }
+  if (rabbitState !== 'walk') return;
+
+  // Only positions 11-14 can successfully jump over the fox
+  if (rabbitPos < 11 || rabbitPos > 14) {
+    statusEl.textContent = '别瞎跳';
+    setTimeout(hideHint, 800);
+  }
+
+  jumpStart   = rabbitPos;
+  rabbitState = 'jump';
+  jumpFrame   = 0;
+  btn.disabled = true;
+  showJumpHint();
+}
+
+/* ────────────── 游戏更新 ────────────── */
+function update() {
+  /* ── 死亡状态：不更新 ── */
+  if (rabbitState === 'dead') {
+    return;
+  }
+
+  /* ── 行走状态 ── */
+  if (rabbitState === 'walk') {
+    posAccum += speed;
+    rabbitPos = Math.floor(posAccum);
+
+    /* 死亡检测 */
+    if (rabbitPos === FOX_POS) {
+      rabbitState  = 'dead';
+      saveBest();
+      btn.disabled = true;
+      posAccum = -speed + 0.01;
+      var cd = 3;
+      btn.textContent = '❤️ '.repeat(cd);
+      var timer = setInterval(function() {
+        cd--;
+        if (cd > 0) { btn.textContent = '❤️ '.repeat(cd); }
+        else { btn.disabled = false; btn.textContent = '\u{1F504} \u91CD\u6765'; clearInterval(timer); }
+      }, 1000);
+      return;
+    }
+
+    /* 通关检测 */
+    if (rabbitPos >= COLS) {
+      nextLevel();
+      return;
+    }
+  }
+
+  /* ── 跳跃状态 ── */
+  if (rabbitState === 'jump') {
+    jumpFrame++;
+
+    /* 计算当前帧位置（线性插值） */
+    var t       = Math.min(jumpFrame / JUMP_FRAMES, 1);
+    var dist    = JUMP_DIST;
+    rabbitPos   = Math.round(jumpStart + dist * t);
+    posAccum    = rabbitPos;
+
+    /* 跳跃结束 */
+    if (t >= 1) {
+      rabbitPos = jumpStart + dist;
+      posAccum  = rabbitPos;
+
+      /* 跳跃落地检测：是否撞到狐狸 */
+      if (rabbitPos === FOX_POS) {
+        rabbitState  = 'dead';
+        saveBest();
+        btn.disabled = true;
+        posAccum = -speed + 0.01;
+        var cd2 = 3;
+        btn.textContent = '❤️ '.repeat(cd2);
+        var timer2 = setInterval(function() {
+          cd2--;
+          if (cd2 > 0) { btn.textContent = '❤️ '.repeat(cd2); }
+          else { btn.disabled = false; btn.textContent = '\u{1F504} \u91CD\u6765'; clearInterval(timer2); }
+        }, 1000);
+        return;
+      }
+
+      /* 跳跃落地检测：是否通关 */
+      if (rabbitPos >= COLS) {
+        nextLevel();
+        return;
+      }
+
+      /* 安全落地 → 继续行走 */
+      rabbitState  = 'walk';
+      btn.disabled = false;
+      hideHint();
+    }
+  }
+}
+
+/* ────────────── 绘制 ────────────── */
+function draw() {
+  var i;
+  var airLine  = '';
+  var charLine = '';
+
+  /* ── 天空层：跳跃时显示兔子 ── */
+  for (i = 0; i < COLS; i++) {
+    if (rabbitState === 'jump') {
+      var t      = Math.min(jumpFrame / JUMP_FRAMES, 1);
+      var height = Math.sin(t * Math.PI);
+      if (height > 0.15 && i === rabbitPos) {
+        airLine += RABBIT;
+      } else {
+        airLine += ' ';
+      }
+    } else {
+      airLine += ' ';
+    }
+  }
+  air.textContent = airLine;
+
+  /* ── 地面角色层 ── */
+  for (i = 0; i < COLS; i++) {
+    if (rabbitState === 'walk' && i === Math.min(rabbitPos, COLS - 1)) {
+      charLine += RABBIT;
+    } else if (i === FOX_POS) {
+      charLine += FOX;
+    } else {
+      charLine += ' ';
+    }
+  }
+  chars.textContent = charLine;
+
+  /* ── 固定装饰 ── */
+  ground.textContent  = ROAD.repeat(COLS / 2);
+  pangram.textContent = PANGRAM;
+}
+
+/* ────────────── 主循环 ────────────── */
+function loop() {
+  update();
+  draw();
+  setTimeout(loop, FRAME_MS);
+}
+
+/* ────────────── 事件绑定 ────────────── */
+btn.addEventListener('click', jump);
+document.addEventListener('touchstart', function(e) {
+  if (e.target.tagName !== 'BUTTON') {
+    jump();
+  }
+});
+
+/* ────────────── 启动 ────────────── */
+loadGameConfig();
+loadBest();
+init();
+loop();
+</script>
+</body>
+</html>
