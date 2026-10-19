@@ -1,38 +1,29 @@
 # F-Droid build recipe for ScanPaste.
-# Status: draft, not submitted. Review the TODOs before opening an RFP/MR.
+# Submit this file as metadata/com.scanpaste.app.yml in fdroiddata.
 
 Categories:
   - Text Editors
 
 License: MIT
+AuthorName: iFeel
 
-# TODO: confirm the public author name to show on the F-Droid listing.
-AuthorName: ScanPaste contributors
-
-# TODO: confirm or remove these URLs.
-WebSite: https://github.com/iFeel-is-a-mouse/scanpaste
-SourceCode: https://github.com/iFeel-is-a-mouse/scanpaste
-IssueTracker: https://github.com/iFeel-is-a-mouse/scanpaste/issues
-Changelog: https://github.com/iFeel-is-a-mouse/scanpaste/releases
+WebSite: https://github.com/iFeel-is-a-mouse/ScanPaste
+SourceCode: https://github.com/iFeel-is-a-mouse/ScanPaste
+IssueTracker: https://github.com/iFeel-is-a-mouse/ScanPaste/issues
+Changelog: https://github.com/iFeel-is-a-mouse/ScanPaste/releases
 
 AutoName: ScanPaste
 
 RepoType: git
-Repo: https://github.com/iFeel-is-a-mouse/scanpaste.git
+Repo: https://github.com/iFeel-is-a-mouse/ScanPaste.git
 
 Builds:
   - versionName: '5.8'
     versionCode: 58
-    # Tag v5.8 is created and pushed with this release.
     commit: v5.8
     subdir: app
-    # The app has a single default variant, so "yes" builds it without
-    # specifying a flavor.
     gradle:
       - 'yes'
-
-# The app's build.gradle.kts declares versionCode 58 / versionName "5.8".
-# Keep them in sync with this recipe when preparing a release.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
