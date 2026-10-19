@@ -2,3 +2,4 @@ v4.4
 
 • Added a copy button to the editor.
 • Compacted the bottom action bar to give the note more room.
+• English UI with short labels.
