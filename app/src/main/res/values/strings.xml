@@ -2,7 +2,7 @@
 <resources>
     <!-- Desktop launcher label is fixed to ScanPaste in every language. -->
     <string name="app_name" translatable="false">ScanPaste</string>
-    <string name="app_version">v5.2</string>
+    <string name="app_version">v5.3</string>
     <string name="editor_hint">Tap Scan to add text from a QR code, or type here</string>
 
     <string name="ui_title">ScanPaste</string>
@@ -22,6 +22,8 @@
     <string name="btn_copy">Copy</string>
 
     <string name="toast_quicknote_saved">Saved to Documents/scanpaste</string>
+    <string name="toast_quicknote_not_found">Quick note not found</string>
+    <string name="toast_quicknote_read_failed">Could not read quick note</string>
     <string name="toast_copied">Copied to clipboard</string>
 
     <string name="widget_desc">Shows your quick note; scrollable and resizable</string>
@@ -29,6 +31,7 @@
     <string name="widget_header">Quick note</string>
     <string name="widget_empty">(empty)</string>
     <string name="widget_read_failed">Could not read the note</string>
+    <string name="widget_no_note">No quick note yet</string>
     <string name="widget_unknown_error">Unknown error</string>
 
     <string name="save_dialog_title">Save file</string>

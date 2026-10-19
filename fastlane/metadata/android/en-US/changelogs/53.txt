@@ -1,0 +1,4 @@
+v5.3
+
+• Fixed Quick read and the home-screen widget when the quick note file is missing.
+• Clear message instead of the raw ENOENT error.

@@ -350,21 +350,45 @@ class MainActivity : AppCompatActivity() {
         QuickNoteWidgetProvider.sendUpdateBroadcast(this)
     }
 
-    private fun findQuickNoteUri(): Uri? {
+    /**
+     * MediaStore may report RELATIVE_PATH with or without a trailing slash depending
+     * on the Android version and how the file was created, so try both forms.
+     */
+    private fun findDocumentUri(displayName: String): Uri? {
+        val paths = arrayOf(
+            "${Environment.DIRECTORY_DOCUMENTS}/scanpaste/",
+            "${Environment.DIRECTORY_DOCUMENTS}/scanpaste"
+        )
+        val collection = MediaStore.Files.getContentUri("external")
         val sel = "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-        val a = arrayOf("${Environment.DIRECTORY_DOCUMENTS}/scanpaste/", "quicknote.txt")
-        contentResolver.query(MediaStore.Files.getContentUri("external"), arrayOf(MediaStore.MediaColumns._ID), sel, a, null)
-            ?.use { c -> if (c.moveToFirst()) return MediaStore.Files.getContentUri("external").buildUpon().appendPath(c.getLong(0).toString()).build() }
+        for (path in paths) {
+            contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID), sel, arrayOf(path, displayName), null)
+                ?.use { c ->
+                    if (c.moveToFirst()) {
+                        return collection.buildUpon().appendPath(c.getLong(0).toString()).build()
+                    }
+                }
+        }
         return null
     }
 
-    private fun findBakUri(fileName: String): Uri? {
-        val sel = "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-        val a = arrayOf("${Environment.DIRECTORY_DOCUMENTS}/scanpaste/", fileName)
-        contentResolver.query(MediaStore.Files.getContentUri("external"), arrayOf(MediaStore.MediaColumns._ID), sel, a, null)
-            ?.use { c -> if (c.moveToFirst()) return MediaStore.Files.getContentUri("external").buildUpon().appendPath(c.getLong(0).toString()).build() }
+    private fun findQuickNoteUri(): Uri? {
+        findDocumentUri("quicknote.txt")?.let { return it }
+        // Fallback: some providers normalize RELATIVE_PATH differently, so match by
+        // display name within the scanpaste folder using a prefix match.
+        val collection = MediaStore.Files.getContentUri("external")
+        val sel = "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
+        val a = arrayOf("quicknote.txt", "${Environment.DIRECTORY_DOCUMENTS}/scanpaste%")
+        contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID), sel, a, null)
+            ?.use { c ->
+                if (c.moveToFirst()) {
+                    return collection.buildUpon().appendPath(c.getLong(0).toString()).build()
+                }
+            }
         return null
     }
+
+    private fun findBakUri(fileName: String): Uri? = findDocumentUri(fileName)
 
     private fun deleteBakIfExists(fileName: String) {
         findBakUri(fileName)?.let { contentResolver.delete(it, null, null) }
@@ -382,14 +406,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadQuickNote() {
+        val uri = try {
+            findQuickNoteUri()
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (uri == null) {
+            Toast.makeText(this, R.string.toast_quicknote_not_found, Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
-            val uri = findOrCreateQuickNoteUri() ?: return
-            contentResolver.openInputStream(uri)?.use { stream ->
-                val text = String(stream.readBytes(), Charsets.UTF_8)
-                viewModel.updateTextManually(text)
-                moveCursorToEnd()
+            val stream = contentResolver.openInputStream(uri)
+            if (stream == null) {
+                Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
+                return
             }
-        } catch (_: Exception) {}
+            val text = stream.use { String(it.readBytes(), Charsets.UTF_8) }
+            viewModel.updateTextManually(text)
+            moveCursorToEnd()
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun createQuickNoteUri(): Uri? {

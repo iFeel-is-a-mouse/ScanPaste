@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- app_name is intentionally absent: the launcher label always falls back to "ScanPaste". -->
-    <string name="app_version">v5.2</string>
+    <string name="app_version">v5.3</string>
     <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
 
     <string name="ui_title">扫码笔记</string>
@@ -21,6 +21,8 @@
     <string name="btn_copy">复制</string>
 
     <string name="toast_quicknote_saved">已保存到 Documents/scanpaste</string>
+    <string name="toast_quicknote_not_found">未找到速记文件</string>
+    <string name="toast_quicknote_read_failed">读取速记失败</string>
     <string name="toast_copied">已复制到剪贴板</string>
 
     <string name="widget_desc">展示速记内容，支持滚动和调整大小</string>
@@ -28,6 +30,7 @@
     <string name="widget_header">速记内容</string>
     <string name="widget_empty">(空)</string>
     <string name="widget_read_failed">读取失败</string>
+    <string name="widget_no_note">还没有速记</string>
     <string name="widget_unknown_error">未知错误</string>
 
     <string name="save_dialog_title">保存文件</string>
