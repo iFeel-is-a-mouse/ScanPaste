@@ -2,7 +2,7 @@
 <resources>
     <!-- Desktop launcher label is fixed to ScanPaste in every language. -->
     <string name="app_name" translatable="false">ScanPaste</string>
-    <string name="app_version">v5.3</string>
+    <string name="app_version">v5.5</string>
     <string name="editor_hint">Tap Scan to add text from a QR code, or type here</string>
 
     <string name="ui_title">ScanPaste</string>
@@ -21,9 +21,20 @@
     <string name="btn_readnote">Read</string>
     <string name="btn_copy">Copy</string>
 
-    <string name="toast_quicknote_saved">Saved to Documents/scanpaste</string>
+    <string name="toast_quicknote_saved">Saved to app storage</string>
     <string name="toast_quicknote_not_found">Quick note not found</string>
     <string name="toast_quicknote_read_failed">Could not read quick note</string>
+    <string name="toast_quicknote_imported">Imported. Tap Note to save it.</string>
+    <string name="toast_quicknote_pick_cancelled">No file selected</string>
+
+    <string name="legacy_import_title">Old quick note found</string>
+    <string name="legacy_import_message">A quick note exists in Documents/scanpaste. Import it?</string>
+    <string name="legacy_import_confirm">Import</string>
+    <string name="legacy_import_skip">Skip</string>
+    <string name="import_too_large">File is too large to import</string>
+    <string name="import_replace_title">Replace current note?</string>
+    <string name="import_replace_message">The editor already has text. Replace it with the imported file?</string>
+    <string name="import_replace_confirm">Replace</string>
     <string name="toast_copied">Copied to clipboard</string>
 
     <string name="widget_desc">Shows your quick note; scrollable and resizable</string>
@@ -68,6 +79,6 @@
     <string name="cd_gallery">Pick an image to scan</string>
 
     <string name="overwrite_title">Quick note already exists</string>
-    <string name="overwrite_message">Documents/scanpaste/quicknote.txt already exists. Overwrite it?\n\nA backup will be created first.</string>
+    <string name="overwrite_message">A quick note already exists. Overwrite it?\n\nA backup will be created first.</string>
     <string name="btn_overwrite">Overwrite</string>
 </resources>

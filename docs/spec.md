@@ -36,8 +36,8 @@
 | 按钮 | 描述 |
 |------|------|
 | 清空 | 清空编辑区全部内容（可撤销恢复） |
-| 速读 | 从 Documents/scanpaste/quicknote.txt 加载到编辑区 |
-| 速记 | 保存编辑区内容到 Documents/scanpaste/quicknote.txt |
+| 速读 | 从 App 私有存储加载速记；可导入旧 Documents/scanpaste/quicknote.txt |
+| 速记 | 保存编辑区内容到 App 私有存储 |
 | 保存 | 自定义文件名+扩展名保存到 Documents 目录 |
 
 #### 彩蛋入口
@@ -84,10 +84,10 @@
 
 ### 2.8 速记/速读
 
-- 速记：一键保存当前内容到 `Documents/scanpaste/quicknote.txt`
+- 速记：一键保存当前内容到 App 私有存储 `Android/data/com.scanpaste.app/files/Documents/scanpaste/quicknote.txt`（v5.5 起）
 - **覆盖提示**：文件已存在时弹窗确认"速记已存在，是否覆盖？"
-- **自动备份**：覆盖前将原文件备份为 `quicknote-1.txt`，已有备份依次轮转（1→2→3→4→5，最多5个）
-- 速读：一键从 `Documents/scanpaste/quicknote.txt` 加载内容到编辑区
+- **自动备份**：覆盖前将原文件备份到 `quicknote-1.txt` ~ `quicknote-5.txt`；空位优先，5 个满后覆盖修改时间最早的一个
+- 速读：一键从 App 私有存储加载内容到编辑区；旧 `Documents/scanpaste/quicknote.txt` 可通过文件选择器导入一次
 - 速记保存后触发桌面小部件刷新
 
 ### 2.9 桌面小部件
@@ -121,7 +121,7 @@
 | 主屏方向 | 竖屏 (portrait) |
 | 游戏方向 | 横屏 (landscape) |
 | 键盘策略 | adjustResize |
-| 数据持久化 | `Documents/scanpaste/` 目录：quicknote.txt / best.txt / game.txt |
+| 数据持久化 | 速记：App 私有 `files/Documents/scanpaste/`；游戏：`Documents/scanpaste/` 的 best.txt / game.txt |
 
 ## 4. 验收标准
 
@@ -145,7 +145,7 @@
 | AC16 | 彩蛋游戏正常运行，纪录持久化 | 手动测试 |
 | AC17 | game.txt 自定义角色生效 | 手动测试 |
 
-## 5. Documents/scanpaste/ 文件
+## 5. 速记与游戏文件
 
 | 文件 | 用途 | 创建者 |
 |------|------|--------|

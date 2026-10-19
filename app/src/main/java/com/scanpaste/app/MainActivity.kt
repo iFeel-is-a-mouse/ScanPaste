@@ -3,7 +3,7 @@ package com.scanpaste.app
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.ContentValues
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,7 +11,6 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.Settings
@@ -38,6 +37,7 @@ import com.scanpaste.app.databinding.ActivityMainBinding
 import com.scanpaste.app.scanner.QrCodeScanner
 import com.scanpaste.app.viewmodel.EditorViewModel
 import com.scanpaste.app.widget.QuickNoteWidgetProvider
+import java.io.ByteArrayOutputStream
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -51,6 +51,10 @@ class MainActivity : AppCompatActivity() {
     private var lastRedoTime = 0L
     private var saveFileName = ""
     private var saveExtension = "txt"
+    private var legacyDiscoveryInProgress = false
+
+    /** Result of a bounded background read. `text == null && !tooLarge` means failure. */
+    private class ImportReadResult(val text: String?, val tooLarge: Boolean)
 
     private val cameraPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -71,6 +75,15 @@ class MainActivity : AppCompatActivity() {
     private val saveFileLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) result.data?.data?.let { writeContentToUri(it) }
+        }
+
+    private val importNoteLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            if (uri == null) {
+                Toast.makeText(this, R.string.toast_quicknote_pick_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                importQuickNote(uri)
+            }
         }
 
     override fun attachBaseContext(newBase: Context) {
@@ -259,9 +272,8 @@ class MainActivity : AppCompatActivity() {
     private fun saveQuickNote() {
         val text = viewModel.text.value ?: ""
         try {
-            val existingUri = findQuickNoteUri()
-            if (existingUri != null) {
-                showOverwriteDialog(text, existingUri)
+            if (QuickNoteStorage.mainFile(this).exists()) {
+                showOverwriteDialog(text)
             } else {
                 doSaveQuickNote(text)
             }
@@ -270,178 +282,208 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showOverwriteDialog(text: String, existingUri: Uri) {
+    private fun showOverwriteDialog(text: String) {
         AlertDialog.Builder(this)
             .setTitle(R.string.overwrite_title)
             .setMessage(R.string.overwrite_message)
             .setPositiveButton(R.string.btn_overwrite) { _, _ ->
-                backupAndSaveQuickNote(text, existingUri)
+                backupAndSaveQuickNote(text)
             }
             .setNegativeButton(R.string.dialog_cancel, null)
             .show()
     }
 
-    private fun backupAndSaveQuickNote(text: String, existingUri: Uri) {
-        try {
-            // Read old content, then delete old file before any MediaStore writes
-            val oldContent = contentResolver.openInputStream(existingUri)?.use {
-                String(it.readBytes(), Charsets.UTF_8)
-            } ?: ""
-            contentResolver.delete(existingUri, null, null)
-
-            // Backup old content to bak slot
-            if (oldContent.isNotEmpty()) {
-                saveToBackupSlot(oldContent)
-            }
-
-            // Create fresh quicknote.txt with new content
-            val newUri = createQuickNoteUri()
-            if (newUri != null) {
-                contentResolver.openOutputStream(newUri)?.use {
-                    it.write(text.toByteArray(Charsets.UTF_8))
-                }
-            }
-            Toast.makeText(this, R.string.toast_quicknote_saved, Toast.LENGTH_SHORT).show()
-            QuickNoteWidgetProvider.sendUpdateBroadcast(this)
-        } catch (e: Exception) {
+    private fun backupAndSaveQuickNote(text: String) {
+        // Read before writing: the atomic write keeps the old note intact, but
+        // the backup has to capture the content that is about to be replaced.
+        val oldContent = QuickNoteStorage.read(this)
+        if (oldContent == null) {
             Toast.makeText(this, R.string.toast_save_failed, Toast.LENGTH_SHORT).show()
+            return
         }
-    }
 
-    /**
-     * Save content into quicknote-1~5.txt.
-     * Fill first empty slot; if all full, overwrite the oldest one.
-     */
-    private fun saveToBackupSlot(content: String) {
-        for (n in 1..5) {
-            val fileName = "quicknote-$n.txt"
-            if (findBakUri(fileName) == null) {
-                writeBakFile(fileName, content)
-                return
-            }
+        // An empty note has nothing worth preserving, so it does not consume a slot.
+        if (oldContent.isNotEmpty() && !QuickNoteStorage.backup(this, oldContent)) {
+            Toast.makeText(this, R.string.toast_save_failed, Toast.LENGTH_SHORT).show()
+            return
         }
-        // All full: find and overwrite the oldest
-        var oldestN = 1
-        var oldestTime = Long.MAX_VALUE
-        for (n in 1..5) {
-            val uri = findBakUri("quicknote-$n.txt") ?: continue
-            val modTime = getFileModifiedTime(uri)
-            if (modTime < oldestTime) {
-                oldestTime = modTime
-                oldestN = n
-            }
+
+        if (!QuickNoteStorage.write(this, text)) {
+            Toast.makeText(this, R.string.toast_save_failed, Toast.LENGTH_SHORT).show()
+            return
         }
-        deleteBakIfExists("quicknote-$oldestN.txt")
-        writeBakFile("quicknote-$oldestN.txt", content)
-    }
-
-    private fun getFileModifiedTime(uri: Uri): Long {
-        return try {
-            contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DATE_MODIFIED), null, null, null)?.use { c ->
-                if (c.moveToFirst()) c.getLong(0) else 0L
-            } ?: 0L
-        } catch (_: Exception) { 0L }
-    }
-
-    private fun doSaveQuickNote(text: String) {
-        val uri = findOrCreateQuickNoteUri() ?: return
-        contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
         Toast.makeText(this, R.string.toast_quicknote_saved, Toast.LENGTH_SHORT).show()
         QuickNoteWidgetProvider.sendUpdateBroadcast(this)
     }
 
-    /**
-     * MediaStore may report RELATIVE_PATH with or without a trailing slash depending
-     * on the Android version and how the file was created, so try both forms.
-     */
-    private fun findDocumentUri(displayName: String): Uri? {
-        val paths = arrayOf(
-            "${Environment.DIRECTORY_DOCUMENTS}/scanpaste/",
-            "${Environment.DIRECTORY_DOCUMENTS}/scanpaste"
-        )
-        val collection = MediaStore.Files.getContentUri("external")
-        val sel = "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-        for (path in paths) {
-            contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID), sel, arrayOf(path, displayName), null)
-                ?.use { c ->
-                    if (c.moveToFirst()) {
-                        return collection.buildUpon().appendPath(c.getLong(0).toString()).build()
-                    }
-                }
+    private fun doSaveQuickNote(text: String) {
+        if (!QuickNoteStorage.write(this, text)) {
+            Toast.makeText(this, R.string.toast_save_failed, Toast.LENGTH_SHORT).show()
+            return
         }
-        return null
-    }
-
-    private fun findQuickNoteUri(): Uri? {
-        findDocumentUri("quicknote.txt")?.let { return it }
-        // Fallback: some providers normalize RELATIVE_PATH differently, so match by
-        // display name within the scanpaste folder using a prefix match.
-        val collection = MediaStore.Files.getContentUri("external")
-        val sel = "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
-        val a = arrayOf("quicknote.txt", "${Environment.DIRECTORY_DOCUMENTS}/scanpaste%")
-        contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID), sel, a, null)
-            ?.use { c ->
-                if (c.moveToFirst()) {
-                    return collection.buildUpon().appendPath(c.getLong(0).toString()).build()
-                }
-            }
-        return null
-    }
-
-    private fun findBakUri(fileName: String): Uri? = findDocumentUri(fileName)
-
-    private fun deleteBakIfExists(fileName: String) {
-        findBakUri(fileName)?.let { contentResolver.delete(it, null, null) }
-    }
-
-    private fun writeBakFile(fileName: String, content: String) {
-        val v = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOCUMENTS}/scanpaste")
-        }
-        contentResolver.insert(MediaStore.Files.getContentUri("external"), v)?.let { uri ->
-            contentResolver.openOutputStream(uri)?.use { it.write(content.toByteArray(Charsets.UTF_8)) }
-        }
+        Toast.makeText(this, R.string.toast_quicknote_saved, Toast.LENGTH_SHORT).show()
+        QuickNoteWidgetProvider.sendUpdateBroadcast(this)
     }
 
     private fun loadQuickNote() {
-        val uri = try {
-            findQuickNoteUri()
-        } catch (e: Exception) {
-            Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (uri == null) {
-            Toast.makeText(this, R.string.toast_quicknote_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val stream = contentResolver.openInputStream(uri)
-            if (stream == null) {
-                Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
-                return
-            }
-            val text = stream.use { String(it.readBytes(), Charsets.UTF_8) }
+        val text = QuickNoteStorage.read(this)
+        if (text != null) {
             viewModel.updateTextManually(text)
             moveCursorToEnd()
-        } catch (e: Exception) {
+            return
+        }
+
+        // Distinguish "file is absent" from "file exists but could not be read".
+        // A read failure must not silently send the user into the import flow.
+        if (QuickNoteStorage.mainFile(this).exists()) {
             Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        discoverLegacyQuickNote()
+    }
+
+    /**
+     * Looks for a quick note written by pre-5.5 versions into shared storage.
+     *
+     * This is a read-only discovery pass: nothing is written, deleted, or
+     * persisted. The MediaStore query runs off the main thread because provider
+     * queries can block on slow storage.
+     */
+    private fun discoverLegacyQuickNote() {
+        if (legacyDiscoveryInProgress) return
+        legacyDiscoveryInProgress = true
+        Thread {
+            val legacyUri = findLegacyQuickNoteUri()
+            runOnUiThread {
+                legacyDiscoveryInProgress = false
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (legacyUri != null) {
+                    showLegacyImportDialog(legacyUri)
+                } else {
+                    launchQuickNoteImport()
+                }
+            }
+        }.start()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun findLegacyQuickNoteUri(): Uri? {
+        val collection = MediaStore.Files.getContentUri("external")
+        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+        val selection: String
+        val selectionArgs: Array<String>
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
+                "${MediaStore.MediaColumns.RELATIVE_PATH} IN (?, ?)"
+            selectionArgs = arrayOf(LEGACY_QUICK_NOTE_NAME, "Documents/scanpaste/", "Documents/scanpaste")
+        } else {
+            // RELATIVE_PATH does not exist before Android 10; fall back to the
+            // absolute path column so pre-scoped-storage installs stay migratable.
+            selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
+                "${MediaStore.MediaColumns.DATA} LIKE ?"
+            selectionArgs = arrayOf(LEGACY_QUICK_NOTE_NAME, "%/Documents/scanpaste/$LEGACY_QUICK_NOTE_NAME")
+        }
+        return try {
+            contentResolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    ContentUris.withAppendedId(collection, cursor.getLong(0))
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 
-    private fun createQuickNoteUri(): Uri? {
-        val v = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "quicknote.txt")
-            put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOCUMENTS}/scanpaste")
-        }
-        return contentResolver.insert(MediaStore.Files.getContentUri("external"), v)
+    private fun showLegacyImportDialog(uri: Uri) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.legacy_import_title)
+            .setMessage(R.string.legacy_import_message)
+            .setPositiveButton(R.string.legacy_import_confirm) { _, _ ->
+                // Reuses the same overwrite guard in case the user typed while
+                // the legacy lookup was running.
+                importQuickNote(uri)
+            }
+            .setNegativeButton(R.string.legacy_import_skip) { _, _ ->
+                launchQuickNoteImport()
+            }
+            .setOnCancelListener { launchQuickNoteImport() }
+            .show()
     }
 
-    private fun findOrCreateQuickNoteUri(): Uri? {
-        findQuickNoteUri()?.let { return it }
-        return createQuickNoteUri()
+    /**
+     * Opens the system file picker and imports the chosen text file into the
+     * editor. The URI is deliberately not persisted: this is a one-shot read,
+     * and saving targets the app-private quick note.
+     */
+    private fun launchQuickNoteImport() {
+        try {
+            importNoteLauncher.launch(arrayOf("text/plain"))
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.toast_quicknote_not_found, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun importQuickNote(uri: Uri) {
+        if ((viewModel.text.value ?: "").isNotEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.import_replace_title)
+                .setMessage(R.string.import_replace_message)
+                .setPositiveButton(R.string.import_replace_confirm) { _, _ ->
+                    readAndApplyImport(uri)
+                }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .show()
+        } else {
+            readAndApplyImport(uri)
+        }
+    }
+
+    /** Reads [uri] on a worker thread and applies the result on the UI thread. */
+    private fun readAndApplyImport(uri: Uri) {
+        Thread {
+            val result = readTextWithLimit(uri)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                when {
+                    result.tooLarge ->
+                        Toast.makeText(this, R.string.import_too_large, Toast.LENGTH_SHORT).show()
+                    result.text == null ->
+                        Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
+                    else -> {
+                        viewModel.updateTextManually(result.text)
+                        moveCursorToEnd()
+                        Toast.makeText(this, R.string.toast_quicknote_imported, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }.start()
+    }
+
+    /**
+     * Reads at most [MAX_IMPORT_BYTES]. Anything larger is rejected before it
+     * can be materialized in memory.
+     */
+    private fun readTextWithLimit(uri: Uri): ImportReadResult {
+        return try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val output = ByteArrayOutputStream()
+                val buffer = ByteArray(8 * 1024)
+                var total = 0
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    total += read
+                    if (total > MAX_IMPORT_BYTES) return ImportReadResult(null, true)
+                    output.write(buffer, 0, read)
+                }
+                ImportReadResult(String(output.toByteArray(), Charsets.UTF_8), false)
+            } ?: ImportReadResult(null, false)
+        } catch (e: Exception) {
+            ImportReadResult(null, false)
+        }
     }
 
     private fun showSaveDialog() {
@@ -486,5 +528,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val DEBOUNCE_MS = 500L
+        private const val MAX_IMPORT_BYTES = 1024 * 1024
+        private const val LEGACY_QUICK_NOTE_NAME = "quicknote.txt"
     }
 }

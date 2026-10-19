@@ -17,7 +17,7 @@ network permission.
 - **扫码追加**：拍照或从相册选图，二维码内容追加到文末。
 - **编辑**：全选、复制、剪切、粘贴；长文本可滚动。
 - **撤销/重做**：追加和清空操作可回退，最多 100 步。
-- **保存与速记**：可另存为 txt、md、csv、json 等文件；速记写入 `Documents/scanpaste/quicknote.txt`。
+- **保存与速记**：可另存为 txt、md、csv、json 等文件；速记保存在应用私有目录，可用「保存」导出到 Documents。
 - **桌面小部件**：展示速记内容，可缩放、滚动，点击打开应用。
 - **纯离线**：ZXing 在设备本地解码，应用没有 INTERNET 权限。
 - **系统要求**：Android 7.0（API 24）及以上。
@@ -32,9 +32,10 @@ network permission.
 - **Copy** — copy the whole note to the clipboard in one tap.
 - **Save as file** — choose a filename and extension (txt, md, csv, json, and so
   on). Files go to Documents by default.
-- **Quick note and quick read** — save to `Documents/scanpaste/quicknote.txt` or
-  load it back with one tap. If the file exists, the app asks before overwriting
-  and keeps five backups (`quicknote-1.txt` … `quicknote-5.txt`).
+- **Quick note and quick read** — the quick note lives in app-private storage.
+  If it exists, the app asks before overwriting and keeps five backups
+  (`quicknote-1.txt` … `quicknote-5.txt`). Use **Save** to export a copy to
+  Documents; **Quick read** can import an existing text file.
 - **Home screen widget** — resizable, scrollable, rounded, and slightly
   translucent. It shows the quick note and opens the app on tap.
 - **Offline by design** — QR decoding runs on-device with ZXing. The app
@@ -71,21 +72,39 @@ the gallery does not need the camera.
 2. Choose **拍照扫码 (Camera)** or **从相册选择 (Gallery)**.
 3. Edit the note as needed. **复制 (Copy)**, **撤销 (Undo)**, and **重做 (Redo)**
    are in the bottom bar.
-4. Tap **保存 (Save)** to write a file, or **速记 (Quick note)** to update
-   `Documents/scanpaste/quicknote.txt`.
+4. Tap **保存 (Save)** to write a file, or **速记 (Quick note)** to update the
+   app-private quick note. Use Save to export a copy to Documents.
+   **Quick read replaces the editor with the saved quick note; save unsaved
+   text first.**
 5. Long-press the home screen and add the ScanPaste widget to see the quick note
    without opening the app.
 
 ## Files and data
 
-The app keeps its files in `Documents/scanpaste/`:
+Quick note files are kept in app-specific external storage:
+
+`Android/data/com.scanpaste.app/files/Documents/scanpaste/`
+
+On Android 11+ other apps cannot read this directory. On Android 10 and below,
+apps that hold storage permission may still be able to read it.
 
 | File | Purpose | Format |
 |------|---------|--------|
 | `quicknote.txt` | Quick note content | Plain text |
 | `quicknote-1.txt` … `quicknote-5.txt` | Backups made before a quick note overwrite (empty slots first, then the oldest) | Plain text |
+
+Rabbit Jump files are kept in `Documents/scanpaste/` (Android 10+):
+
+| File | Purpose | Format |
+|------|---------|--------|
 | `best.txt` | Rabbit Jump high score | `level,date time` |
 | `game.txt` | Rabbit Jump characters and caption | 3 lines: player emoji, obstacle emoji, caption |
+
+These files are removed when the app is uninstalled. Android backup is disabled;
+use **Save** to export a copy to Documents before uninstalling or switching
+devices. On first **Quick read**, the app looks for an old
+`Documents/scanpaste/quicknote.txt` and offers to import it. Only the main file
+is imported; old backups remain in Documents until you delete them.
 
 ### Customizing `game.txt`
 
@@ -109,10 +128,13 @@ ScanPaste is designed to work without a network.
 - There are no analytics, ads, crash reporters, or accounts.
 - Camera frames are decoded on-device and are not stored by the app.
 - Gallery images are read only to decode the selected image.
-- Notes are saved only where you put them: usually `Documents/scanpaste/` or a
-  location you choose. Unsaved text stays in memory. Android backup is disabled
-  (`allowBackup="false"`).
-- Uninstalling the app does not delete files you saved in Documents.
+- Quick notes are stored in app-specific external storage; use **Save** to
+  export a copy to Documents. Unsaved text stays in memory. Cloud backup is disabled
+  (`allowBackup="false"`). Device-to-device migration depends on the OEM;
+  export a copy before switching devices.
+- Uninstalling the app deletes the quick note and its backups in app-specific
+  storage.
+  Files you exported to Documents are not deleted.
 
 ## Build from source
 
@@ -155,6 +177,7 @@ file, `assembleRelease` produces an unsigned APK.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v5.5 | 2026-10-19 | 速记改存应用私有目录；5 个备份；速读可导入旧文件；保存导出到 Documents |
 | v5.3 | 2026-10-19 | 修复速记文件缺失时速读/小部件 ENOENT；增加路径兼容与友好提示 |
 | v5.2 | 2026-10-19 | 标题菜单下移与正文顶部对齐；语言项统一为 English / 中文；修复语言切换 |
 | v5.1 | 2026-10-19 | 标题菜单去掉右侧单选圆点，三项改为纯文字 |

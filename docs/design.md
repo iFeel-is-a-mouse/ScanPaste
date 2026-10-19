@@ -17,7 +17,7 @@
 | 架构模式 | MVVM (单Activity + ViewModel + LiveData) | spec 强制 ViewModel |
 | UI | Material Design 3 + ViewBinding + ConstraintLayout | 现代 Android 实践 |
 | 扫码 | ZXing Embedded 4.3.0 | 纯离线 |
-| 持久化 | MediaStore (Documents/scanpaste/) | Android 10+ SAF 兼容 |
+| 速记持久化 | App 私有外部存储 (`Android/data/com.scanpaste.app/files/Documents/scanpaste/`) | 无需权限，不受 MediaStore 归属影响 |
 | 小部件 | AppWidget + RemoteViewsService (ListView) | 桌面速记展示 |
 | 彩蛋 | WebView + HTML5 Canvas + JavaScript | 内嵌游戏 |
 | 测试 | JUnit4 + Truth | 原生兼容 |
@@ -83,9 +83,10 @@
 │  │  ├── Android.saveBest() → 写 best.txt 纪录               │  │
 │  │  └── Android.back()     → finish()                       │  │
 │  └────────────────────────────────────────────────────────┘  │
-│  Documents/scanpaste/                                          │
+│  App 私有: Android/data/com.scanpaste.app/files/Documents/scanpaste/ │
 │  ├── quicknote.txt       (速记内容)                            │
-│  ├── quicknote-1~5.txt   (速记覆盖备份)                        │
+│  └── quicknote-1~5.txt   (速记覆盖备份)                        │
+│  Documents/scanpaste/                                          │
 │  ├── game.txt            (🐰/🦊/文字, 3行)                      │
 │  └── best.txt            (关卡数,日期时间)                     │
 └──────────────────────────────────────────────────────────────┘
@@ -259,7 +260,7 @@ redo (clear重做):
 | ADR2 | 独立 CaptureActivity 扫码 | 无需管理相机生命周期 |
 | ADR3 | Undo/Redo 双栈 + clear 快照 | 标准模式 + 清空可恢复 |
 | ADR4 | 固定 18sp 字号 | 简洁可靠，避免自适应复杂度 |
-| ADR5 | MediaStore 持久化 | Android 10+ 标准，Documents/scanpaste/ 目录 |
+| ADR5 | 速记 App 私有存储 | 无权限、不受 MediaStore 归属影响；旧 Documents 速记可导入 |
 | ADR6 | game.txt 配置化 | 用户可自定义游戏角色，重启生效 |
 | ADR7 | LiveData 非 StateFlow | Android View 层天然支持 |
 | ADR8 | adjustResize | 键盘弹起时编辑区自适应收缩 |

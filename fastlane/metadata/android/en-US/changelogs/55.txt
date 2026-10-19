@@ -1,0 +1,4 @@
+v5.5
+
+• Quick note is now stored in app-private storage.
+• Use Save to export a copy to Documents; Quick read can import an existing text file.

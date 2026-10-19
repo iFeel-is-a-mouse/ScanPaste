@@ -2,12 +2,10 @@ package com.scanpaste.app.widget
 
 import android.content.Context
 import android.content.Intent
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
+import com.scanpaste.app.QuickNoteStorage
 import com.scanpaste.app.R
-import java.io.FileNotFoundException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,39 +50,29 @@ class QuickNoteWidgetService : RemoteViewsService() {
         override fun getItemId(pos: Int) = pos.toLong()
         override fun hasStableIds() = true
 
+        /**
+         * Reads the app-private quick note. This never creates or queries a
+         * MediaStore entry; the widget only reflects the file the app writes.
+         */
         private fun loadQuickNote() {
-            val uri = try {
-                findQuickNoteUri()
-            } catch (e: Exception) {
-                showReadFailed()
-                return
-            }
-            if (uri == null) {
+            val file = QuickNoteStorage.mainFile(context)
+            if (!file.isFile) {
                 showNoNote()
                 return
             }
-            try {
-                header = context.getString(R.string.widget_header)
-                val df = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-                context.contentResolver.query(
-                    uri, arrayOf(MediaStore.MediaColumns.DATE_MODIFIED), null, null, null
-                )?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        header = "🕐 ${df.format(Date(cursor.getLong(0) * 1000))}"
-                    }
-                }
-                val stream = context.contentResolver.openInputStream(uri)
-                    ?: throw FileNotFoundException("quicknote.txt is missing")
-                val txt = stream.use { String(it.readBytes(), Charsets.UTF_8) }
-                items = if (txt.isEmpty()) listOf(context.getString(R.string.widget_empty)) else txt.lines()
-                if (items.size > 100) items = items.take(100) + "…"
-            } catch (e: FileNotFoundException) {
-                showNoNote()
-            } catch (e: Exception) {
-                // A MediaStore entry can exist while its backing file is gone; the
-                // provider reports that as ENOENT wrapped in a generic exception.
-                if (e.message?.contains("ENOENT") == true) showNoNote() else showReadFailed()
+
+            val txt = QuickNoteStorage.read(context)
+            if (txt == null) {
+                // Distinguish a file that vanished mid-read (no note) from one
+                // that exists but cannot be read (read failure).
+                if (file.isFile) showReadFailed() else showNoNote()
+                return
             }
+
+            val df = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            header = "🕐 ${df.format(Date(file.lastModified()))}"
+            items = if (txt.isEmpty()) listOf(context.getString(R.string.widget_empty)) else txt.lines()
+            if (items.size > 100) items = items.take(100) + "…"
         }
 
         private fun showNoNote() {
@@ -95,38 +83,6 @@ class QuickNoteWidgetService : RemoteViewsService() {
         private fun showReadFailed() {
             header = context.getString(R.string.widget_read_failed)
             items = listOf(context.getString(R.string.widget_unknown_error))
-        }
-
-        /**
-         * Query an existing quick note only; never create a MediaStore entry here.
-         * RELATIVE_PATH is reported with or without a trailing slash depending on
-         * the Android version, so both forms are attempted.
-         */
-        private fun findQuickNoteUri(): android.net.Uri? {
-            val collection = MediaStore.Files.getContentUri("external")
-            val sel = "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-            for (path in arrayOf(
-                "${Environment.DIRECTORY_DOCUMENTS}/scanpaste/",
-                "${Environment.DIRECTORY_DOCUMENTS}/scanpaste"
-            )) {
-                context.contentResolver.query(
-                    collection, arrayOf(MediaStore.MediaColumns._ID), sel, arrayOf(path, "quicknote.txt"), null
-                )?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        return collection.buildUpon().appendPath(cursor.getLong(0).toString()).build()
-                    }
-                }
-            }
-            val fallbackSel = "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
-            val fallbackArgs = arrayOf("quicknote.txt", "${Environment.DIRECTORY_DOCUMENTS}/scanpaste%")
-            context.contentResolver.query(
-                collection, arrayOf(MediaStore.MediaColumns._ID), fallbackSel, fallbackArgs, null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    return collection.buildUpon().appendPath(cursor.getLong(0).toString()).build()
-                }
-            }
-            return null
         }
     }
 }

@@ -24,8 +24,8 @@ android {
         applicationId = "com.scanpaste.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 53
-        versionName = "5.3"
+        versionCode = 55
+        versionName = "5.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
