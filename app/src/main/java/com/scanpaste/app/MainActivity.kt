@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.content.pm.PackageManager
@@ -21,6 +22,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -42,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     private var lastAppendTime = 0L
     private var lastUndoTime = 0L
     private var lastRedoTime = 0L
-    private var saveFileName = "扫码笔记"
+    private var saveFileName = ""
     private var saveExtension = "txt"
 
     private val cameraPermissionLauncher =
@@ -66,18 +68,25 @@ class MainActivity : AppCompatActivity() {
             if (result.resultCode == RESULT_OK) result.data?.data?.let { writeContentToUri(it) }
         }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        saveFileName = getString(R.string.save_default_name)
         applyWindowInsets()
         viewModel = ViewModelProvider(this)[EditorViewModel::class.java]
         qrCodeScanner = QrCodeScanner()
         setupObservers()
         setupClickListeners()
         setupTextWatcher()
-        handleIntent(intent)
+        // Only handle the launch intent on first creation: recreate() (language switch)
+        // must not reload the quick note over unsaved edits.
+        if (savedInstanceState == null) handleIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -126,10 +135,39 @@ class MainActivity : AppCompatActivity() {
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this, R.string.toast_copied, Toast.LENGTH_SHORT).show()
         }
-        // Easter egg: click title → RabbitJump game
-        binding.tvTitle.setOnClickListener {
-            startActivity(Intent(this, RabbitJumpActivity::class.java))
+        // Title hotspot: language switch + Easter egg entry
+        binding.tvTitle.setOnClickListener { showTitleMenu() }
+    }
+
+    private fun showTitleMenu() {
+        val popup = PopupMenu(this, binding.tvTitle)
+        val menu = popup.menu
+        menu.add(MENU_GROUP, MENU_LANGUAGE_EN, 0, R.string.menu_language_en)
+        menu.add(MENU_GROUP, MENU_LANGUAGE_ZH, 1, R.string.menu_language_zh)
+        menu.add(MENU_GROUP, MENU_EASTER_EGG, 2, R.string.menu_easter_egg)
+        menu.setGroupCheckable(MENU_GROUP, true, true)
+
+        val current = LanguagePrefs.get(this)
+        menu.findItem(MENU_LANGUAGE_EN).isChecked = current == LanguagePrefs.LANG_EN
+        menu.findItem(MENU_LANGUAGE_ZH).isChecked = current == LanguagePrefs.LANG_ZH
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_LANGUAGE_EN -> switchLanguage(LanguagePrefs.LANG_EN)
+                MENU_LANGUAGE_ZH -> switchLanguage(LanguagePrefs.LANG_ZH)
+                MENU_EASTER_EGG ->
+                    startActivity(Intent(this, RabbitJumpActivity::class.java))
+            }
+            true
         }
+        popup.show()
+    }
+
+    /** Recreates the activity so the new locale applies to the inflated layout. */
+    private fun switchLanguage(lang: String) {
+        if (LanguagePrefs.get(this) == lang) return
+        LanguagePrefs.set(this, lang)
+        recreate()
     }
 
     private fun setupTextWatcher() {
@@ -338,7 +376,7 @@ class MainActivity : AppCompatActivity() {
         val etE = view.findViewById<EditText>(R.id.et_extension); etE.setText(saveExtension)
         AlertDialog.Builder(this).setTitle(R.string.save_dialog_title).setView(view)
             .setPositiveButton(R.string.btn_save) { _, _ ->
-                saveFileName = etF.text.toString().ifBlank { "扫码笔记" }
+                saveFileName = etF.text.toString().ifBlank { getString(R.string.save_default_name) }
                 saveExtension = etE.text.toString().ifBlank { "txt" }
                 launchSaveFile()
             }.setNegativeButton(R.string.dialog_cancel, null).show()
@@ -372,5 +410,11 @@ class MainActivity : AppCompatActivity() {
     private fun debounce(last: Long) = now() - last >= DEBOUNCE_MS
     private fun now() = System.currentTimeMillis()
 
-    companion object { private const val DEBOUNCE_MS = 500L }
+    companion object {
+        private const val DEBOUNCE_MS = 500L
+        private const val MENU_GROUP = 0
+        private const val MENU_LANGUAGE_EN = 1
+        private const val MENU_LANGUAGE_ZH = 2
+        private const val MENU_EASTER_EGG = 3
+    }
 }

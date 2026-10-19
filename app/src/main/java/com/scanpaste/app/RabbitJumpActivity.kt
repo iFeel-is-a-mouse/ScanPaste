@@ -1,6 +1,7 @@
 package com.scanpaste.app
 
 import android.content.ContentValues
+import android.content.Context
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -9,6 +10,10 @@ import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 
 class RabbitJumpActivity : AppCompatActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +65,7 @@ class RabbitJumpActivity : AppCompatActivity() {
                         return content
                     }
                 }
-                // 文件不存在或为空，创建默认文件
+                // File missing or empty: create the default one
                 val default = "🐰\n🦊\nThe cute rabbit jumps over the lazy fox"
                 val newUri = findOrCreateUri("game.txt") ?: return default
                 contentResolver.openOutputStream(newUri, "wt")?.use {

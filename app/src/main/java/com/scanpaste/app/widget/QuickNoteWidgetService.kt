@@ -55,7 +55,9 @@ class QuickNoteWidgetService : RemoteViewsService() {
         private fun loadQuickNote() {
             try {
                 val uri = findOrCreateUri() ?: run {
-                    header = "速记内容"; items = listOf("(空)"); return
+                    header = context.getString(R.string.widget_header)
+                    items = listOf(context.getString(R.string.widget_empty))
+                    return
                 }
                 val df = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
                 context.contentResolver.query(
@@ -68,10 +70,11 @@ class QuickNoteWidgetService : RemoteViewsService() {
                 val txt = context.contentResolver.openInputStream(uri)?.use {
                     String(it.readBytes(), Charsets.UTF_8)
                 } ?: ""
-                items = if (txt.isEmpty()) listOf("(空)") else txt.lines()
+                items = if (txt.isEmpty()) listOf(context.getString(R.string.widget_empty)) else txt.lines()
                 if (items.size > 100) items = items.take(100) + "…"
             } catch (e: Exception) {
-                header = "读取失败"; items = listOf(e.message ?: "未知错误")
+                header = context.getString(R.string.widget_read_failed)
+                items = listOf(e.message ?: context.getString(R.string.widget_unknown_error))
             }
         }
 

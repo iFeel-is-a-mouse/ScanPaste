@@ -1,5 +1,6 @@
 package com.scanpaste.app.scanner
 
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
@@ -9,12 +10,18 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.journeyapps.barcodescanner.CaptureActivity
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
+import com.scanpaste.app.LanguagePrefs
 
 /**
  * Custom CaptureActivity: portrait-only with repositioned prompt text
  * that sits above the bottom navigation bar area.
  */
 class ScanPasteCaptureActivity : CaptureActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT

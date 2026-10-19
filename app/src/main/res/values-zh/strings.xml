@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is intentionally absent: the launcher label always falls back to "ScanPaste". -->
+    <string name="app_version">v5.0</string>
+    <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
+
+    <string name="ui_title">扫码笔记</string>
+    <string name="menu_language_en">语言: English</string>
+    <string name="menu_language_zh">语言:中文</string>
+    <string name="menu_easter_egg">彩蛋游戏</string>
+
+    <string name="btn_undo">撤销</string>
+    <string name="btn_redo">重做</string>
+    <string name="btn_append">扫码</string>
+
+    <string name="btn_clear">清空</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_quicknote">速记</string>
+    <string name="btn_game">🎮</string>
+    <string name="btn_readnote">速读</string>
+    <string name="btn_copy">复制</string>
+
+    <string name="toast_quicknote_saved">已保存到 Documents/scanpaste</string>
+    <string name="toast_copied">已复制到剪贴板</string>
+
+    <string name="widget_desc">展示速记内容，支持滚动和调整大小</string>
+    <string name="widget_empty_hint">速记内容为空</string>
+    <string name="widget_header">速记内容</string>
+    <string name="widget_empty">(空)</string>
+    <string name="widget_read_failed">读取失败</string>
+    <string name="widget_unknown_error">未知错误</string>
+
+    <string name="save_dialog_title">保存文件</string>
+    <string name="save_filename_hint">文件名（不含扩展名）</string>
+    <string name="save_extension_hint">扩展名（如 txt, md, csv）</string>
+    <string name="save_default_name">扫码笔记</string>
+    <string name="save_default_ext">txt</string>
+    <string name="toast_saved">文件已保存</string>
+    <string name="toast_save_failed">保存失败</string>
+
+    <string name="permission_camera_title">需要相机权限</string>
+    <string name="permission_camera_message">扫码功能需要相机权限，请在系统设置中开启。</string>
+    <string name="permission_camera_snackbar">需要相机权限才能扫码</string>
+
+    <string name="dialog_go_to_settings">前往设置</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_authorize">授权</string>
+
+    <string name="toast_undo_changed">追加内容已被修改，无法撤销</string>
+    <string name="toast_qr_not_found">未识别到二维码</string>
+    <string name="toast_qr_decode_failed">图片解码失败</string>
+
+    <string name="scanner_prompt">将二维码放入取景框内</string>
+
+    <string name="scan_source_title">选择扫码方式</string>
+    <string name="btn_camera_scan">拍照扫码</string>
+    <string name="btn_gallery_scan">从相册选择</string>
+
+    <string name="cd_undo">撤销</string>
+    <string name="cd_redo">重做</string>
+    <string name="cd_append">拍照扫码</string>
+    <string name="btn_gallery">相册</string>
+
+    <string name="cd_gallery">从相册选择图片扫码</string>
+
+    <string name="overwrite_title">速记已存在</string>
+    <string name="overwrite_message">Documents/scanpaste/quicknote.txt 已存在，是否覆盖？\n\n覆盖前会自动备份。</string>
+    <string name="btn_overwrite">覆盖</string>
+</resources>

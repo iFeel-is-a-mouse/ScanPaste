@@ -19,7 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:text="速记内容为空"
+        android:text="@string/widget_empty_hint"
         android:textColor="#9E9E9E"
         android:textSize="14sp" />
 

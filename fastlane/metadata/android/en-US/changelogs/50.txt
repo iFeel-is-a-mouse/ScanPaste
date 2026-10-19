@@ -1,0 +1,6 @@
+v5.0
+
+• English is now the default UI; Chinese is still available.
+• Tap the title to open a menu: Language: English / Language: 中文 / Easter egg game.
+• The Easter egg game moved into that title menu.
+• The launcher label stays "ScanPaste" in every language.

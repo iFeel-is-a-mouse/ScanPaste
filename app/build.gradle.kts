@@ -24,8 +24,8 @@ android {
         applicationId = "com.scanpaste.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 44
-        versionName = "4.4"
+        versionCode = 50
+        versionName = "5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -69,6 +69,13 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    // The in-app language switch must work without a Play Core language download.
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
 }
 
