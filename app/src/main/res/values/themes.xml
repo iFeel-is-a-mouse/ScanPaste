@@ -27,22 +27,28 @@
 
     <!-- Bottom button: text style (Undo / Redo) -->
     <style name="Widget.ScanPaste.BottomButton" parent="Widget.Material3.Button.TextButton">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="iconGravity">textStart</item>
-        <item name="iconPadding">6dp</item>
+        <item name="iconPadding">2dp</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
         <item name="cornerRadius">8dp</item>
-        <item name="android:minHeight">44dp</item>
+        <item name="android:minHeight">36dp</item>
+        <item name="android:minWidth">0dp</item>
     </style>
 
-    <!-- Bottom button: filled style (Append) — extends default M3 button (filled) -->
+    <!-- Bottom button: filled style (Append) -->
     <style name="Widget.ScanPaste.BottomButton.Filled" parent="Widget.Material3.Button">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="iconGravity">textStart</item>
-        <item name="iconPadding">6dp</item>
+        <item name="iconPadding">2dp</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
         <item name="cornerRadius">8dp</item>
-        <item name="android:minHeight">44dp</item>
+        <item name="android:minHeight">36dp</item>
+        <item name="android:minWidth">0dp</item>
         <item name="backgroundTint">@color/md_primary</item>
         <item name="android:textColor">@color/md_on_primary</item>
     </style>

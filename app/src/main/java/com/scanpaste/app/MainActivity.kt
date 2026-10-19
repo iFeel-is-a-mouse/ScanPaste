@@ -1,6 +1,8 @@
 package com.scanpaste.app
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Intent
 import android.os.Bundle
@@ -118,6 +120,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener { showSaveDialog() }
         binding.btnQuicknote.setOnClickListener { saveQuickNote() }
         binding.btnReadnote.setOnClickListener { loadQuickNote() }
+        binding.btnCopy.setOnClickListener {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("ScanPaste", viewModel.text.value ?: "")
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(this, R.string.toast_copied, Toast.LENGTH_SHORT).show()
+        }
         // Easter egg: click title → RabbitJump game
         binding.tvTitle.setOnClickListener {
             startActivity(Intent(this, RabbitJumpActivity::class.java))

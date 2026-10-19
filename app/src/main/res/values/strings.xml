@@ -6,15 +6,17 @@
 
     <string name="btn_undo">撤销</string>
     <string name="btn_redo">重做</string>
-    <string name="btn_append">追加</string>
+    <string name="btn_append">扫码</string>
 
     <string name="btn_clear">清空</string>
     <string name="btn_save">保存</string>
     <string name="btn_quicknote">速记</string>
     <string name="btn_game">🎮</string>
     <string name="btn_readnote">速读</string>
+    <string name="btn_copy">复制</string>
 
     <string name="toast_quicknote_saved">已保存到 Documents/scanpaste</string>
+    <string name="toast_copied">已复制到剪贴板</string>
 
     <string name="widget_desc">展示速记内容，支持滚动和调整大小</string>
 
@@ -46,7 +48,9 @@
 
     <string name="cd_undo">撤销</string>
     <string name="cd_redo">重做</string>
-    <string name="cd_append">拍照扫码追加</string>
+    <string name="cd_append">拍照扫码</string>
+    <string name="btn_gallery">相册</string>
+
     <string name="cd_gallery">从相册选择图片扫码</string>
 
     <string name="overwrite_title">速记已存在</string>
