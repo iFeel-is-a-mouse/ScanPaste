@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity() {
 
 ### 3.2 EditorViewModel
 
-**关键方法（v5.7）**：
+**关键方法（v5.8）**：
 
 ```kotlin
 class EditorViewModel : ViewModel() {
@@ -215,7 +215,7 @@ WebView 加载 `rabbitjump.html`，通过 `AndroidBridge` 提供 4 个 JS 接口
 
 AppWidget 组件：ListView 展示 quicknote.txt 内容，圆角 + 10% 透明背景，点击打开文件。
 
-## 4. Undo/Redo 算法（v5.7）
+## 4. Undo/Redo 算法（v5.8）
 
 全文快照双栈：
 
@@ -251,7 +251,7 @@ redo():
 - `EditText` 设置 `android:allowUndo="false"`，关闭系统原生撤销，避免与自定义 Undo 冲突。
 - 不再有“追加文本被修改导致撤销失败”的 Toast。
 
-## 5. 布局要点（v5.7）
+## 5. 布局要点（v5.8）
 
 - **Edge-to-edge**: 透明状态栏 + `status_bar_spacer`(蓝色, 动态高度) + IME insets 处理
 - **NestedScrollView**: fillViewport, 键盘自适应 via adjustResize

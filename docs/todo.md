@@ -12,3 +12,10 @@
 | 7 | 2026-05-29 00:06 | 测试 | tester | ✅ | 2026-05-29 00:43 |
 | 8 | 2026-05-29 00:06 | 交付终审+checklist质量清单 | auditor | ✅ | 2026-05-29 00:43 |
 | 9 | 2026-05-29 00:06 | main 最终确认 + git merge + README | main+publicist | ✅ | 2026-05-29 18:43 |
+
+## 5.9 待办（来自 5.8 三审 P3）
+
+- [ ] 合并窗口改用 `SystemClock.elapsedRealtime()`，避免墙钟回拨误合并
+- [ ] `commit` 的 coalesce 分支防御性 `redoStack.clear()`（当前不可达，但显式更稳）
+- [ ] 连续不停顿输入的单组上限（时长/换行/字符数）——产品确认
+- [ ] `docs/design.md` / `docs/testable-items.md` 版本标注已更新到 5.8（2026-10-19）
