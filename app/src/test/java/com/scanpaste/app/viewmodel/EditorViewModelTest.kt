@@ -19,9 +19,30 @@ class EditorViewModelTest {
 
     private lateinit var vm: EditorViewModel
 
+    /** Controlled clock for the injected [EditorViewModel.nowProvider]. */
+    private var clock = 0L
+
     @Before
     fun setUp() {
         vm = EditorViewModel()
+        // By default every commit lands in its own 500 ms window, so the
+        // "one edit = one undo step" expectations below keep holding.
+        // Grouping tests replace this with a frozen clock and advance().
+        vm.nowProvider = {
+            val now = clock
+            clock += 1_000L
+            now
+        }
+    }
+
+    /** Freezes time so manual commits can be placed anywhere in a group. */
+    private fun useFrozenClock(start: Long = 10_000L) {
+        clock = start
+        vm.nowProvider = { clock }
+    }
+
+    private fun advance(millis: Long) {
+        clock += millis
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -546,6 +567,196 @@ class EditorViewModelTest {
         assertThat(vm.text.value).isEqualTo("abc")
         vm.redo()
         assertThat(vm.text.value).isEqualTo("")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Manual input grouping (500 ms)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `manual edits within 500ms should collapse into a single undo step`() {
+        useFrozenClock()
+
+        vm.updateTextManually("h")
+        advance(100)
+        vm.updateTextManually("he")
+        advance(100)
+        vm.updateTextManually("hel")
+
+        assertThat(vm.text.value).isEqualTo("hel")
+        assertThat(undoStackSize(vm)).isEqualTo(1)
+        assertThat(undoStackSnapshot(vm)).containsExactly("")
+
+        vm.undo()
+
+        assertThat(vm.text.value).isEqualTo("")
+        assertThat(vm.canUndo.value).isFalse()
+        assertThat(vm.canRedo.value).isTrue()
+    }
+
+    @Test
+    fun `manual edit exactly at the 500ms boundary should still group`() {
+        useFrozenClock()
+
+        vm.updateTextManually("a")
+        advance(500)
+        vm.updateTextManually("ab")
+
+        assertThat(undoStackSize(vm)).isEqualTo(1)
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("")
+    }
+
+    @Test
+    fun `manual edits beyond 500ms should create separate undo steps`() {
+        useFrozenClock()
+
+        vm.updateTextManually("a")
+        advance(600)
+        vm.updateTextManually("ab")
+
+        assertThat(undoStackSize(vm)).isEqualTo(2)
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("a")
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("")
+    }
+
+    @Test
+    fun `appendText should break a pending manual group`() {
+        useFrozenClock()
+
+        vm.updateTextManually("a")
+        advance(10)
+        vm.appendText("b")
+        advance(10)
+        vm.updateTextManually("abc")
+
+        assertThat(undoStackSize(vm)).isEqualTo(3)
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("ab")
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("a")
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("")
+    }
+
+    @Test
+    fun `clearAll should not merge into a pending manual group`() {
+        useFrozenClock()
+
+        vm.updateTextManually("draft")
+        advance(10)
+        vm.clearAll()
+
+        assertThat(vm.text.value).isEqualTo("")
+        assertThat(undoStackSize(vm)).isEqualTo(2)
+        assertThat(undoStackSnapshot(vm)).containsExactly("", "draft").inOrder()
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("draft")
+    }
+
+    @Test
+    fun `replaceText should not merge into a pending manual group`() {
+        useFrozenClock()
+
+        vm.updateTextManually("draft")
+        advance(10)
+        vm.replaceText("loaded note")
+
+        assertThat(undoStackSize(vm)).isEqualTo(2)
+        assertThat(undoStackSnapshot(vm)).containsExactly("", "draft").inOrder()
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("draft")
+    }
+
+    @Test
+    fun `undo should reset grouping so the next edit starts a new step`() {
+        useFrozenClock()
+
+        vm.updateTextManually("a")
+        advance(10)
+        vm.updateTextManually("ab")
+        assertThat(undoStackSize(vm)).isEqualTo(1)
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("")
+
+        // Still inside the 500 ms window, but the group was already undone.
+        advance(10)
+        vm.updateTextManually("x")
+
+        assertThat(vm.canRedo.value).isFalse()
+        assertThat(undoStackSize(vm)).isEqualTo(1)
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("")
+        assertThat(vm.canUndo.value).isFalse()
+    }
+
+    @Test
+    fun `manual edit right after programmatic replace should start a new step`() {
+        useFrozenClock()
+
+        vm.replaceText("base")
+        advance(10)
+        vm.updateTextManually("base!")
+
+        assertThat(undoStackSize(vm)).isEqualTo(2)
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo("base")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Character budget (2,000,000 chars across undo + redo)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `history should evict oldest snapshots when the character budget is exceeded`() {
+        val chunkSize = 600_000
+        repeat(5) { i -> vm.updateTextManually("x".repeat(chunkSize - 1) + i) }
+
+        val totalChars = undoStackSnapshot(vm).sumOf { it.length } +
+            redoStackSnapshot(vm).sumOf { it.length }
+
+        assertThat(totalChars).isAtMost(2_000_000)
+        assertThat(undoStackSize(vm)).isLessThan(5)
+        // The newest snapshot survives; the oldest ones were evicted.
+        assertThat(undoStackSnapshot(vm).last()).isEqualTo("x".repeat(chunkSize - 1) + "3")
+    }
+
+    @Test
+    fun `a single oversized snapshot should be retained`() {
+        val huge = "y".repeat(3_000_000)
+
+        vm.updateTextManually(huge)
+        vm.clearAll()
+
+        assertThat(undoStackSize(vm)).isEqualTo(1)
+        assertThat(undoStackSnapshot(vm)).containsExactly(huge)
+
+        vm.undo()
+        assertThat(vm.text.value).isEqualTo(huge)
+        assertThat(vm.canUndo.value).isFalse()
+    }
+
+    @Test
+    fun `budget trimming should keep both stacks consistent after undo`() {
+        val chunkSize = 600_000
+        repeat(5) { i -> vm.updateTextManually("z".repeat(chunkSize - 1) + i) }
+
+        repeat(3) { vm.undo() }
+
+        val totalChars = undoStackSnapshot(vm).sumOf { it.length } +
+            redoStackSnapshot(vm).sumOf { it.length }
+
+        assertThat(totalChars).isAtMost(2_000_000)
+        assertThat(vm.text.value).isEqualTo("z".repeat(chunkSize - 1) + "1")
+        assertThat(vm.canRedo.value).isTrue()
     }
 
     private class InstantTaskExecutor : TaskExecutor() {

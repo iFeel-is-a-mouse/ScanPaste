@@ -202,6 +202,7 @@
             android:id="@+id/et_editor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:allowUndo="false"
             android:background="@null"
             android:gravity="top|start"
             android:hint="@string/editor_hint"

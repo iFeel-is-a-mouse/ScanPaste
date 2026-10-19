@@ -2,7 +2,7 @@
 <resources>
     <!-- Desktop launcher label is fixed to ScanPaste in every language. -->
     <string name="app_name" translatable="false">ScanPaste</string>
-    <string name="app_version">v5.7</string>
+    <string name="app_version">v5.8</string>
     <string name="editor_hint">Tap Scan to add text from a QR code, or type here</string>
 
     <string name="ui_title">ScanPaste</string>

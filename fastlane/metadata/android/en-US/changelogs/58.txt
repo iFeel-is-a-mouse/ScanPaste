@@ -1,0 +1,5 @@
+v5.8
+
+• Consecutive typing is grouped into one undo step (500 ms).
+• Undo history has a 4 MB snapshot budget.
+• Native text undo is disabled to avoid conflicting with the app's undo.

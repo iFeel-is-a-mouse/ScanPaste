@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- app_name is intentionally absent: the launcher label always falls back to "ScanPaste". -->
-    <string name="app_version">v5.7</string>
+    <string name="app_version">v5.8</string>
     <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
 
     <string name="ui_title">扫码笔记</string>

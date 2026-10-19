@@ -223,12 +223,16 @@ AppWidget 组件：ListView 展示 quicknote.txt 内容，圆角 + 10% 透明背
 undoStack: ArrayDeque<String>  // 每次变化前的全文
 redoStack: ArrayDeque<String>  // 被撤销的全文
 
-commit(newText):
+commit(newText, source):
   if newText == current: return
-  undoStack.push(current)
-  if undoStack.size > 200: undoStack.removeFirst()
-  redoStack.clear()
+  if !(source == MANUAL && lastCommitWasManual && now - lastManualCommitAt <= 500ms):
+    undoStack.push(current)
+    if undoStack.size > 200: undoStack.removeFirst()
+    redoStack.clear()
   text = newText
+  lastCommitWasManual = (source == MANUAL)
+  lastManualCommitAt = if (source == MANUAL) now else 0
+  trimToBudget(2_000_000 chars)
 
 undo():
   if undoStack.empty: return
@@ -243,6 +247,8 @@ redo():
 
 - 手动输入、扫码追加、清空、速读/导入都走 `commit`，因此都可撤销/重做。
 - 启动自动加载走 `setInitialText`，作为基线，不进入历史。
+- 连续手动输入 500ms 内合并为一个撤销单元；快照总字符超过 2,000,000 时淘汰最旧。
+- `EditText` 设置 `android:allowUndo="false"`，关闭系统原生撤销，避免与自定义 Undo 冲突。
 - 不再有“追加文本被修改导致撤销失败”的 Toast。
 
 ## 5. 布局要点（v5.7）

@@ -16,7 +16,7 @@ network permission.
 
 - **扫码追加**：拍照或从相册选图，二维码内容追加到文末。
 - **编辑**：全选、复制、剪切、粘贴；长文本可滚动。
-- **撤销/重做**：每次编辑、追加、清空都可回退/重做，最多 200 步。
+- **撤销/重做**：每次编辑、追加、清空都可回退/重做，最多 200 步；连续输入 500ms 内合并为一步。
 - **保存与速记**：可另存为 txt、md、csv、json 等文件；速记保存在应用私有目录，可用「保存」导出到 Documents。
 - **桌面小部件**：展示速记内容，可缩放、滚动，点击打开应用。
 - **纯离线**：ZXing 在设备本地解码，应用没有 INTERNET 权限。
@@ -29,7 +29,7 @@ network permission.
 - **Editing** — select all, copy, cut, and paste. Fixed 18sp text, scrollable for
   long notes.
 - **Undo and redo** — every edit, append, and clear can be undone and redone,
-  up to 200 steps.
+  up to 200 steps. Consecutive typing within 500 ms is grouped into one step.
 - **Copy** — copy the whole note to the clipboard in one tap.
 - **Save as file** — choose a filename and extension (txt, md, csv, json, and so
   on). Files go to Documents by default.
@@ -179,6 +179,7 @@ file, `assembleRelease` produces an unsigned APK.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v5.8 | 2026-10-19 | 连续输入合并；撤销快照约 4MB 预算；关闭系统原生撤销避免冲突 |
 | v5.7 | 2026-10-19 | 全文 undo/redo；启动自动读速记；英文按钮 Note → QuickS |
 | v5.6 | 2026-10-19 | 速读/导入速记后重置撤销历史，避免出现无法撤销的提示 |
 | v5.5 | 2026-10-19 | 速记改存应用私有目录；5 个备份；速读可导入旧文件；保存导出到 Documents |

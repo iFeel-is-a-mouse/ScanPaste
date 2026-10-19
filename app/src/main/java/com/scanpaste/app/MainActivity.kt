@@ -115,17 +115,19 @@ class MainActivity : AppCompatActivity() {
         }
         // Only handle the launch intent on first creation: recreate() (language switch)
         // must not reload the quick note over unsaved edits.
-        if (savedInstanceState == null) handleIntent(intent)
+        if (savedInstanceState == null) handleIntent(intent, recordHistory = false)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent)
+        handleIntent(intent, recordHistory = true)
     }
 
-    private fun handleIntent(intent: Intent) {
-        if (intent.getBooleanExtra(QuickNoteWidgetProvider.EXTRA_LOAD_QUICKNOTE, false)) {
-            loadQuickNote(recordHistory = false)
+    private fun handleIntent(intent: Intent, recordHistory: Boolean) {
+        if (intent.getBooleanExtra(QuickNoteWidgetProvider.EXTRA_LOAD_QUICKNOTE, false) &&
+            QuickNoteStorage.mainFile(this).exists()
+        ) {
+            loadQuickNote(recordHistory)
         }
     }
 
