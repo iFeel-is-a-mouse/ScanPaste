@@ -21,22 +21,22 @@ RepoType: git
 Repo: https://github.com/iFeel-is-a-mouse/scanpaste.git
 
 Builds:
-  - versionName: '5.0'
-    versionCode: 50
+  - versionName: '5.1'
+    versionCode: 51
     # TODO: the repository currently has no tags. Create and push the v4.5 tag
     # first, or replace this with the full commit hash (preferred for
     # reproducible builds; tags can be moved).
-    commit: v5.0
+    commit: v5.1
     subdir: app
     # The app has a single default variant, so "yes" builds it without
     # specifying a flavor.
     gradle:
       - 'yes'
 
-# The app's build.gradle.kts declares versionCode 50 / versionName "5.0".
+# The app's build.gradle.kts declares versionCode 51 / versionName "5.1".
 # Keep them in sync with this recipe when preparing a release.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: '5.0'
-CurrentVersionCode: 50
+CurrentVersion: '5.1'
+CurrentVersionCode: 51

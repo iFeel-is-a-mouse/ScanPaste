@@ -145,11 +145,6 @@ class MainActivity : AppCompatActivity() {
         menu.add(MENU_GROUP, MENU_LANGUAGE_EN, 0, R.string.menu_language_en)
         menu.add(MENU_GROUP, MENU_LANGUAGE_ZH, 1, R.string.menu_language_zh)
         menu.add(MENU_GROUP, MENU_EASTER_EGG, 2, R.string.menu_easter_egg)
-        menu.setGroupCheckable(MENU_GROUP, true, true)
-
-        val current = LanguagePrefs.get(this)
-        menu.findItem(MENU_LANGUAGE_EN).isChecked = current == LanguagePrefs.LANG_EN
-        menu.findItem(MENU_LANGUAGE_ZH).isChecked = current == LanguagePrefs.LANG_ZH
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
