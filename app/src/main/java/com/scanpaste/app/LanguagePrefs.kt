@@ -2,14 +2,16 @@ package com.scanpaste.app
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.res.Configuration
-import java.util.Locale
 
 /**
  * Stores the UI language chosen from the title menu.
  *
  * The app ships with English as the default resource set, so "en" is also the
  * fallback when nothing has been stored yet.
+ *
+ * Applying the locale happens in each Activity's attachBaseContext via
+ * applyOverrideConfiguration, which AppCompat honours more reliably than a
+ * createConfigurationContext wrapper.
  */
 object LanguagePrefs {
     private const val PREFS_NAME = "scanpaste_settings"
@@ -25,20 +27,6 @@ object LanguagePrefs {
 
     fun set(context: Context, lang: String) {
         prefs(context).edit().putString(KEY_LANGUAGE, lang).apply()
-    }
-
-    /**
-     * Returns a Context whose resources use the stored language.
-     *
-     * Called from each Activity's attachBaseContext so that the chosen locale
-     * applies before the layout is inflated.
-     */
-    fun wrap(base: Context): Context {
-        val locale = Locale(get(base))
-        Locale.setDefault(locale)
-        val config = Configuration(base.resources.configuration)
-        config.setLocale(locale)
-        return base.createConfigurationContext(config)
     }
 
     private fun prefs(context: Context): SharedPreferences =

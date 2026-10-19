@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- app_name is intentionally absent: the launcher label always falls back to "ScanPaste". -->
-    <string name="app_version">v5.1</string>
+    <string name="app_version">v5.2</string>
     <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
 
     <string name="ui_title">扫码笔记</string>
-    <string name="menu_language_en">语言: English</string>
-    <string name="menu_language_zh">语言:中文</string>
+    <string name="menu_language_en">English</string>
+    <string name="menu_language_zh">中文</string>
     <string name="menu_easter_egg">彩蛋游戏</string>
 
     <string name="btn_undo">撤销</string>

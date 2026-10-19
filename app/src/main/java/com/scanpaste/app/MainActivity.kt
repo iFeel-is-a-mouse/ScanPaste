@@ -6,10 +6,11 @@ import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
@@ -17,13 +18,16 @@ import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.ListPopupWindow
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,6 +38,7 @@ import com.scanpaste.app.databinding.ActivityMainBinding
 import com.scanpaste.app.scanner.QrCodeScanner
 import com.scanpaste.app.viewmodel.EditorViewModel
 import com.scanpaste.app.widget.QuickNoteWidgetProvider
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -69,7 +74,12 @@ class MainActivity : AppCompatActivity() {
         }
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+        val locale = Locale(LanguagePrefs.get(newBase))
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        applyOverrideConfiguration(config)
+        super.attachBaseContext(newBase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,29 +150,60 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTitleMenu() {
-        val popup = PopupMenu(this, binding.tvTitle)
-        val menu = popup.menu
-        menu.add(MENU_GROUP, MENU_LANGUAGE_EN, 0, R.string.menu_language_en)
-        menu.add(MENU_GROUP, MENU_LANGUAGE_ZH, 1, R.string.menu_language_zh)
-        menu.add(MENU_GROUP, MENU_EASTER_EGG, 2, R.string.menu_easter_egg)
-
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                MENU_LANGUAGE_EN -> switchLanguage(LanguagePrefs.LANG_EN)
-                MENU_LANGUAGE_ZH -> switchLanguage(LanguagePrefs.LANG_ZH)
-                MENU_EASTER_EGG ->
-                    startActivity(Intent(this, RabbitJumpActivity::class.java))
+        val items = listOf(
+            getString(R.string.menu_language_en),
+            getString(R.string.menu_language_zh),
+            getString(R.string.menu_easter_egg)
+        )
+        val popup = ListPopupWindow(this).apply {
+            anchorView = binding.tvTitle
+            setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, items))
+            isModal = true
+            width = resources.getDimensionPixelSize(R.dimen.menu_width)
+            verticalOffset = titleMenuVerticalOffset()
+        }
+        popup.setOnItemClickListener { _, _, position, _ ->
+            when (position) {
+                0 -> switchLanguage(LanguagePrefs.LANG_EN)
+                1 -> switchLanguage(LanguagePrefs.LANG_ZH)
+                2 -> startActivity(Intent(this, RabbitJumpActivity::class.java))
             }
-            true
+            popup.dismiss()
         }
         popup.show()
     }
 
-    /** Recreates the activity so the new locale applies to the inflated layout. */
+    /**
+     * Vertical distance from the title's bottom edge to the note area's top edge.
+     *
+     * ListPopupWindow anchors its top edge to the anchor's bottom and shifts it
+     * down by verticalOffset, so this value makes the menu top line up with the
+     * note area. Clamped at 0: should the note area ever start above the title
+     * bottom, the menu stays just below the title instead of covering the toolbar.
+     */
+    private fun titleMenuVerticalOffset(): Int {
+        val titleLocation = IntArray(2)
+        val editorLocation = IntArray(2)
+        binding.tvTitle.getLocationOnScreen(titleLocation)
+        binding.scrollEditor.getLocationOnScreen(editorLocation)
+        val titleBottom = titleLocation[1] + binding.tvTitle.height
+        return (editorLocation[1] - titleBottom).coerceAtLeast(0)
+    }
+
+    /**
+     * Persists the language and rebuilds the UI.
+     *
+     * There is deliberately no "already selected" early return: the stored
+     * preference can already match while the visible resources still use the
+     * old locale, and in that case the user still expects a rebuild.
+     */
     private fun switchLanguage(lang: String) {
-        if (LanguagePrefs.get(this) == lang) return
         LanguagePrefs.set(this, lang)
-        recreate()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+        } else {
+            recreate()
+        }
     }
 
     private fun setupTextWatcher() {
@@ -407,9 +448,5 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val DEBOUNCE_MS = 500L
-        private const val MENU_GROUP = 0
-        private const val MENU_LANGUAGE_EN = 1
-        private const val MENU_LANGUAGE_ZH = 2
-        private const val MENU_EASTER_EGG = 3
     }
 }

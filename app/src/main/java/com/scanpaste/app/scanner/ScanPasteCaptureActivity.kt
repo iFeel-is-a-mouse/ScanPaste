@@ -2,6 +2,7 @@ package com.scanpaste.app.scanner
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
@@ -11,6 +12,7 @@ import android.widget.TextView
 import com.journeyapps.barcodescanner.CaptureActivity
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.scanpaste.app.LanguagePrefs
+import java.util.Locale
 
 /**
  * Custom CaptureActivity: portrait-only with repositioned prompt text
@@ -19,7 +21,12 @@ import com.scanpaste.app.LanguagePrefs
 class ScanPasteCaptureActivity : CaptureActivity() {
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+        val locale = Locale(LanguagePrefs.get(newBase))
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        applyOverrideConfiguration(config)
+        super.attachBaseContext(newBase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

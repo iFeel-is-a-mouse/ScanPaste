@@ -2,17 +2,24 @@ package com.scanpaste.app
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
+import java.util.Locale
 
 class RabbitJumpActivity : AppCompatActivity() {
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LanguagePrefs.wrap(newBase))
+        val locale = Locale(LanguagePrefs.get(newBase))
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        applyOverrideConfiguration(config)
+        super.attachBaseContext(newBase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

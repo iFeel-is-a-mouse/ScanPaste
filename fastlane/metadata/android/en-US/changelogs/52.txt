@@ -1,0 +1,4 @@
+v5.2
+
+• The title menu now opens aligned with the note area.
+• Language options are always English / 中文; the mixed Language:/语言: prefixes were removed.

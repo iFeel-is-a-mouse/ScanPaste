@@ -2,12 +2,12 @@
 <resources>
     <!-- Desktop launcher label is fixed to ScanPaste in every language. -->
     <string name="app_name" translatable="false">ScanPaste</string>
-    <string name="app_version">v5.1</string>
+    <string name="app_version">v5.2</string>
     <string name="editor_hint">Tap Scan to add text from a QR code, or type here</string>
 
     <string name="ui_title">ScanPaste</string>
-    <string name="menu_language_en">Language: English</string>
-    <string name="menu_language_zh">Language: 中文</string>
+    <string name="menu_language_en">English</string>
+    <string name="menu_language_zh">中文</string>
     <string name="menu_easter_egg">Easter egg game</string>
 
     <string name="btn_undo">Undo</string>

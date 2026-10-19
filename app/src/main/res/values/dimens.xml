@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Title menu width; wide enough for the localized Easter egg label. -->
+    <dimen name="menu_width">220dp</dimen>
+</resources>
