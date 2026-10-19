@@ -1,0 +1,1 @@
+Offline QR scanner that appends scanned text to a note.

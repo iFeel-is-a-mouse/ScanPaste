@@ -1,0 +1,10 @@
+* text=auto
+
+# Gradle wrapper scripts: LF on every platform
+gradlew eol=lf
+gradlew.bat eol=crlf
+*.bat eol=crlf
+
+# Binary assets
+*.png binary
+*.jar binary

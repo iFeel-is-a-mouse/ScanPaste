@@ -1,0 +1,27 @@
+ScanPaste is a small, offline notebook for QR codes.
+
+Scan a code with the camera or pick an image from the gallery, and the decoded text is appended to the note you are editing. Keep typing, paste more text, or scan another code. The note stays editable throughout.
+
+Features
+
+• Scan and append: camera or gallery input; text is appended to the end of the note.
+• Editing: select all, copy, cut, and paste. Long notes scroll.
+• Undo and redo: append and clear actions can be undone, up to 100 steps.
+• Copy: one tap copies the whole note.
+• Save as file: choose a name and extension (txt, md, csv, json, and others). Files go to Documents by default.
+• Quick note: save to Documents/scanpaste/quicknote.txt. If the file already exists, the app asks first and keeps up to five backups.
+• Quick read: load quicknote.txt back into the editor.
+• Home screen widget: resizable and scrollable, shows the quick note, and opens the app on tap.
+• Rabbit Jump: a small easter egg behind the title. Characters and caption are configurable in game.txt.
+
+Privacy
+
+ScanPaste works without a network. It has no INTERNET permission, no ads, no analytics, no accounts, and no crash reporting. QR decoding runs on the device with ZXing. Camera frames are not stored. Saved notes stay in local storage, and Android backup is disabled.
+
+Requirements
+
+Android 7.0 (API 24) or newer. Camera permission is requested only for scanning. Gallery scanning does not need it.
+
+License
+
+GPL-3.0-or-later. Source code: https://github.com/iFeel-is-a-mouse/scanpaste

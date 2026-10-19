@@ -1,0 +1,42 @@
+# F-Droid build recipe for ScanPaste.
+# Status: draft, not submitted. Review the TODOs before opening an RFP/MR.
+
+Categories:
+  - Text Editors
+
+License: MIT
+
+# TODO: confirm the public author name to show on the F-Droid listing.
+AuthorName: ScanPaste contributors
+
+# TODO: confirm or remove these URLs.
+WebSite: https://github.com/iFeel-is-a-mouse/scanpaste
+SourceCode: https://github.com/iFeel-is-a-mouse/scanpaste
+IssueTracker: https://github.com/iFeel-is-a-mouse/scanpaste/issues
+Changelog: https://github.com/iFeel-is-a-mouse/scanpaste/releases
+
+AutoName: ScanPaste
+
+RepoType: git
+Repo: https://github.com/iFeel-is-a-mouse/scanpaste.git
+
+Builds:
+  - versionName: '4.4'
+    versionCode: 44
+    # TODO: the repository currently has no tags. Create and push the v4.4 tag
+    # first, or replace this with the full commit hash (preferred for
+    # reproducible builds; tags can be moved).
+    commit: v4.4
+    subdir: app
+    # The app has a single default variant, so "yes" builds it without
+    # specifying a flavor.
+    gradle:
+      - 'yes'
+
+# The app's build.gradle.kts declares versionCode 44 / versionName "4.4".
+# Keep them in sync with this recipe when preparing a release.
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '4.4'
+CurrentVersionCode: 44

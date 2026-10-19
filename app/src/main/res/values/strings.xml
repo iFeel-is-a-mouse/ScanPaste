@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">扫码笔记</string>
-    <string name="app_version">v4.3</string>
+    <string name="app_version">v4.4</string>
     <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
 
     <string name="btn_undo">撤销</string>

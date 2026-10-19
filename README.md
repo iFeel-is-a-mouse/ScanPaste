@@ -1,129 +1,192 @@
-# 扫码笔记 — 二维码扫码追加工具 v4.3
+# ScanPaste · 扫码笔记
 
-> 扫一扫，文字自动追加到编辑区。支持撤销/重做/保存/速记/桌面小部件。内含 🐰 彩蛋游戏。
+ScanPaste is a small offline QR code notebook for Android. Scan a code, and the
+decoded text is appended to the note you are editing. No account, no sync, no
+network permission.
 
-## 功能
+**中文简介：** 扫码笔记是一款纯离线的二维码记录工具。扫描二维码后，文字会自动追加到编辑区。支持撤销/重做、复制、保存、速记和桌面小部件，不联网，也不收集数据。
 
-- **扫码追加** — 点击"追加"拍照扫码，🖼️图标从相册选图；二维码内容自动追加到文末
-- **编辑区** — 支持全选/复制/剪切/粘贴，18sp固定字号，长文本可滚动
-- **撤销/重做** — 追加/清空操作可撤销和重做，最多100次历史记录
-- **保存文件** — 自定义文件名+扩展名(txt/md/csv/json等)，默认Documents目录
-- **速记** — 一键保存到 `Documents/scanpaste/quicknote.txt`，文件已存在时弹窗确认覆盖，覆盖前自动备份为 quicknote-1~5.txt
-- **速读** — 一键从 `Documents/scanpaste/quicknote.txt` 加载到编辑区
-- **桌面小部件** — 可缩放+滚动+圆角+10%透明，展示quicknote内容，点击打开文件
-- **纯离线** — ZXing扫码引擎，无网络权限
-- **🐰 彩蛋游戏** — 点击标题进入 Rabbit Jump 小游戏
+## 中文要点
 
-## Documents/scanpaste/ 文件说明
+- **扫码追加**：拍照或从相册选图，二维码内容追加到文末。
+- **编辑**：全选、复制、剪切、粘贴；长文本可滚动。
+- **撤销/重做**：追加和清空操作可回退，最多 100 步。
+- **保存与速记**：可另存为 txt、md、csv、json 等文件；速记写入 `Documents/scanpaste/quicknote.txt`。
+- **桌面小部件**：展示速记内容，可缩放、滚动，点击打开应用。
+- **纯离线**：ZXing 在设备本地解码，应用没有 INTERNET 权限。
+- **系统要求**：Android 7.0（API 24）及以上。
 
-应用会在 `Documents/scanpaste/` 下维护以下文件，可自行查看和编辑：
+## Features
 
-| 文件 | 用途 | 格式 |
-|------|------|------|
-| `quicknote.txt` | 速记内容（速记保存/速读加载） | 纯文本 |
-| `quicknote-1.txt` ~ `quicknote-5.txt` | 🆕 速记覆盖前的备份（空位优先，满了覆盖最旧） | 纯文本 |
-| `best.txt` | 彩蛋游戏最高纪录 | `关卡数,日期时间` |
-| `game.txt` | 🆕 彩蛋游戏角色配置 | 3行：🐰 / 🦊 / 展示文字 |
+- **Scan and append** — scan with the camera or pick an image from the gallery.
+  The decoded text is appended to the end of the note.
+- **Editing** — select all, copy, cut, and paste. Fixed 18sp text, scrollable for
+  long notes.
+- **Undo and redo** — append and clear actions can be undone, up to 100 steps.
+- **Copy** — copy the whole note to the clipboard in one tap.
+- **Save as file** — choose a filename and extension (txt, md, csv, json, and so
+  on). Files go to Documents by default.
+- **Quick note and quick read** — save to `Documents/scanpaste/quicknote.txt` or
+  load it back with one tap. If the file exists, the app asks before overwriting
+  and keeps five backups (`quicknote-1.txt` … `quicknote-5.txt`).
+- **Home screen widget** — resizable, scrollable, rounded, and slightly
+  translucent. It shows the quick note and opens the app on tap.
+- **Offline by design** — QR decoding runs on-device with ZXing. The app
+  declares no `INTERNET` permission.
+- **Easter egg** — tap the title to play Rabbit Jump. The characters and caption
+  can be changed in `game.txt`.
 
-### game.txt 定制
+## Install
 
-游戏中的兔子、狐狸和底部文字全部从 `game.txt` 读取。修改任意一行，重启游戏即可看到变化：
+### F-Droid
+
+<!-- F-Droid badge. Uncomment and keep once the listing is live:
+<a href="https://f-droid.org/packages/com.scanpaste.app/">
+  <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">
+</a>
+-->
+
+The F-Droid listing is in preparation. Until it is published, install the APK
+from GitHub Releases.
+
+### GitHub Releases
+
+Download the latest APK from
+[Releases](https://github.com/iFeel-is-a-mouse/scanpaste/releases) and open it on
+a device running Android 7.0 (API 24) or newer. You may need to allow installs
+from unknown sources for your browser or file manager.
+
+The app asks for camera permission only when you scan. Scanning an image from
+the gallery does not need the camera.
+
+## Usage
+
+1. Type in the editor, or tap **扫码 (Scan)** to add text from a QR code.
+2. Choose **拍照扫码 (Camera)** or **从相册选择 (Gallery)**.
+3. Edit the note as needed. **复制 (Copy)**, **撤销 (Undo)**, and **重做 (Redo)**
+   are in the bottom bar.
+4. Tap **保存 (Save)** to write a file, or **速记 (Quick note)** to update
+   `Documents/scanpaste/quicknote.txt`.
+5. Long-press the home screen and add the ScanPaste widget to see the quick note
+   without opening the app.
+
+## Files and data
+
+The app keeps its files in `Documents/scanpaste/`:
+
+| File | Purpose | Format |
+|------|---------|--------|
+| `quicknote.txt` | Quick note content | Plain text |
+| `quicknote-1.txt` … `quicknote-5.txt` | Backups made before a quick note overwrite (empty slots first, then the oldest) | Plain text |
+| `best.txt` | Rabbit Jump high score | `level,date time` |
+| `game.txt` | Rabbit Jump characters and caption | 3 lines: player emoji, obstacle emoji, caption |
+
+### Customizing `game.txt`
+
+The game reads the rabbit, the fox, and the caption from `game.txt`. Edit any
+line and restart the game:
 
 ```
-🐰          ← 第1行：玩家角色（兔子 emoji）
-🦊          ← 第2行：障碍物（狐狸 emoji）
-The cute rabbit jumps over the lazy fox  ← 第3行：底部展示文字
+🐰
+🦊
+The cute rabbit jumps over the lazy fox
 ```
 
-首次启动游戏时自动创建。删除文件后重启游戏会重新生成默认值。
+The file is created on first launch. Delete it and restart the game to restore
+the defaults.
 
-示例定制：
-```
-🐱
-🐶
-The quick brown cat jumps over the lazy dog
-```
+## Privacy
 
-## 技术栈
+ScanPaste is designed to work without a network.
 
-| 类别 | 选择 |
-|------|------|
-| 语言 | Kotlin |
-| 架构 | MVVM (单Activity + ViewModel + LiveData) |
-| UI | Material Design 3 + MaterialToolbar + ViewBinding |
-| 扫码 | ZXing Embedded 4.3.0 |
-| 存储 | SAF + MediaStore (Android 10+) |
-| 小部件 | AppWidget + RemoteViewsService (ListView) |
-| 彩蛋游戏 | WebView + HTML5 Canvas + JS |
-| 测试 | JUnit4 + Truth |
+- The app has no `INTERNET` permission. The manifest explicitly removes it.
+- There are no analytics, ads, crash reporters, or accounts.
+- Camera frames are decoded on-device and are not stored by the app.
+- Gallery images are read only to decode the selected image.
+- Notes are saved only where you put them: usually `Documents/scanpaste/` or a
+  location you choose. Unsaved text stays in memory. Android backup is disabled
+  (`allowBackup="false"`).
+- Uninstalling the app does not delete files you saved in Documents.
 
-## 构建
+## Build from source
 
-### 环境要求
+Requirements:
 
-- JDK 17+（实测 JDK 26 可编译）
-- Android SDK 35（platform + build-tools）
-- Gradle 8.14（项目自带 gradlew，无需手动安装）
+- JDK 17 or newer
+- Android SDK Platform 35 and Build-Tools 35.0.0
+- The Gradle wrapper included in the repository
 
-### 1. 安装 Android SDK
-
-```bash
-# 下载 cmdline-tools
-curl -L -o /tmp/cmdline-tools.zip \
-  "https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip"
-
-# 解压到目标目录
-unzip -qo /tmp/cmdline-tools.zip -d ~/android-sdk/cmdline-tools
-mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
-
-# 设置环境变量
-export ANDROID_HOME=~/android-sdk
-export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
-# 安装必需组件
-yes | sdkmanager --sdk_root=$ANDROID_HOME \
-  "platform-tools" \
-  "platforms;android-35" \
-  "build-tools;35.0.0"
-```
-
-### 2. 配置 local.properties
-
-项目根目录的 `local.properties` 指向你的 Android SDK：
+Install the SDK with Android Studio's SDK Manager, or with the Android
+command-line tools. Then point the build at your SDK, either with the
+`ANDROID_HOME` environment variable or with `sdk.dir` in `local.properties`:
 
 ```properties
-sdk.dir=/Users/你的用户名/android-sdk
+sdk.dir=/path/to/your/android-sdk
 ```
 
-### 3. 构建 APK
+Build a debug APK:
 
 ```bash
+git clone https://github.com/iFeel-is-a-mouse/scanpaste.git
 cd scanpaste
-./gradlew assembleDebug    # Debug APK → app/build/outputs/apk/debug/
-./gradlew assembleRelease  # Release APK → app/build/outputs/apk/release/（需签名）
+./gradlew assembleDebug
 ```
 
-> **macOS 注意**：JDK 26 下 sdkmanager 会有 JNA 警告，不影响使用。Linux/Windows 同理，只需替换 cmdline-tools 的下载链接。
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
-## 演进历史
+For a release build:
 
-| 版本 | 日期 | 变更 |
-|------|------|------|
-| v1.0 | 2026-05-29 | MVP：白底EditText + 三个基础按钮 + 扫码追加 |
-| v1.1 | 2026-05-29 | 修复：撤销重做逻辑、键盘自适应 |
-| v1.2 | 2026-05-29 | 新增：相册扫码入口、清空按钮 |
-| v2.0 | 2026-05-29 | MD3主题 + 蓝色Toolbar + 图标按钮 |
-| v2.1–v2.6 | 2026-05-29 | 保存功能、速记、速读、桌面小部件 |
-| v3.0 | 2026-05-29 | IME insets键盘自适应、撤销重做收敛 |
-| v3.1 | 2026-05-29 | 小部件滚动、圆角、透明优化 |
-| v3.2 | 2026-05-29 | 全选/复制/剪切/粘贴、EditorActionListener移除 |
-| v4.0 | 2026-05-29 | UI重做：NestedScrollView + 5按钮底部栏 + 版本号 |
-| v4.1 | 2026-05-29 | 彩蛋游戏：标题点击进入Rabbit Jump + best.txt持久化 |
+```bash
+./gradlew assembleRelease
+```
+
+Release builds can use a local signing key. Create `keystore.properties` in the
+project root with the `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`
+entries, and keep the file and the keystore out of version control. Without that
+file, `assembleRelease` produces an unsigned APK.
+
+## Version history
+
+| Version | Date | Changes |
+|---------|------|---------|
+| v4.4 | 2026-10-19 | 新增复制按钮；压缩底部操作栏，给编辑区留出更多空间 |
 | v4.3 | 2026-05-29 | 速记覆盖提示：文件已存在时弹窗确认，覆盖前备份为 quicknote-1~5.txt |
 | v4.2 | 2026-05-29 | 彩蛋游戏配置化：🐰🦊文字从 game.txt 动态读取，可自定义角色 |
+| v4.1 | 2026-05-29 | 彩蛋游戏：标题点击进入 Rabbit Jump + best.txt 持久化 |
+| v4.0 | 2026-05-29 | UI 重做：NestedScrollView + 5 按钮底部栏 + 版本号 |
+| v3.2 | 2026-05-29 | 全选/复制/剪切/粘贴、EditorActionListener 移除 |
+| v3.1 | 2026-05-29 | 小部件滚动、圆角、透明优化 |
+| v3.0 | 2026-05-29 | IME insets 键盘自适应、撤销重做收敛 |
+| v2.1–v2.6 | 2026-05-29 | 保存功能、速记、速读、桌面小部件 |
+| v2.0 | 2026-05-29 | MD3 主题 + 蓝色 Toolbar + 图标按钮 |
+| v1.2 | 2026-05-29 | 新增：相册扫码入口、清空按钮 |
+| v1.1 | 2026-05-29 | 修复：撤销重做逻辑、键盘自适应 |
+| v1.0 | 2026-05-29 | MVP：白底 EditText + 三个基础按钮 + 扫码追加 |
 
-## 彩蛋触发方式
+## Tech stack
 
-点击 Toolbar 的「扫码笔记」标题即可进入 Rabbit Jump 小游戏。
+| Area | Choice |
+|------|--------|
+| Language | Kotlin |
+| Architecture | MVVM (single Activity + ViewModel + LiveData) |
+| UI | Material Design 3, MaterialToolbar, ViewBinding |
+| Scanning | ZXing Embedded 4.3.0 |
+| Storage | Storage Access Framework + MediaStore (Android 10+) |
+| Widget | AppWidget + RemoteViewsService |
+| Easter egg | WebView + HTML5 Canvas + JavaScript |
+| Tests | JUnit4 + Truth |
 
-游戏规则：兔兔从左侧出发向右移动，狐狸站在第15格。在兔兔到达第11-14格时点击跳跃，精准跳过狐狸即通关。通关后速度递增。撞到狐狸需等3秒重来。
+## Contributing
+
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the workflow.
+
+Two rules matter more than style: keep the app offline, and do not add the
+`INTERNET` permission or any network dependency.
+
+## License
+
+ScanPaste is released under the MIT License. See [LICENSE](LICENSE) for the full
+text.
+
+Copyright (c) 2026 iFeel.

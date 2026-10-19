@@ -27,6 +27,11 @@ out/
 # ProGuard
 proguard/
 
+# Signing (never commit keystores or credentials)
+keystore.properties
+*.jks
+*.keystore
+
 # Logs
 *.log
 # --- 派生物（可重建，不入 git）见 AGENTS.md ---
