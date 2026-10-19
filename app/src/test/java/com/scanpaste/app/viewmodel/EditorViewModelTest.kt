@@ -403,6 +403,44 @@ class EditorViewModelTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // UT7b: replaceText()
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `replaceText should set text and clear undo history`() {
+        vm.appendText("a")
+        assertThat(vm.canUndo.value).isTrue()
+
+        vm.replaceText("loaded note")
+
+        assertThat(vm.text.value).isEqualTo("loaded note")
+        assertThat(vm.canUndo.value).isFalse()
+        assertThat(vm.canRedo.value).isFalse()
+    }
+
+    @Test
+    fun `replaceText should clear redo history`() {
+        vm.appendText("a")
+        vm.undo()
+        assertThat(vm.canRedo.value).isTrue()
+
+        vm.replaceText("loaded note")
+
+        assertThat(vm.canRedo.value).isFalse()
+    }
+
+    @Test
+    fun `replaceText should leave undo as a no-op afterwards`() {
+        vm.appendText("old appended text")
+        vm.replaceText("loaded note")
+
+        vm.undo()
+
+        assertThat(vm.text.value).isEqualTo("loaded note")
+        assertThat(vm.undoFailed.value).isFalse()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // UT8: Button states
     // ═══════════════════════════════════════════════════════════════════════
 

@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadQuickNote() {
         val text = QuickNoteStorage.read(this)
         if (text != null) {
-            viewModel.updateTextManually(text)
+            viewModel.replaceText(text)
             moveCursorToEnd()
             return
         }
@@ -453,7 +453,7 @@ class MainActivity : AppCompatActivity() {
                     result.text == null ->
                         Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
                     else -> {
-                        viewModel.updateTextManually(result.text)
+                        viewModel.replaceText(result.text)
                         moveCursorToEnd()
                         Toast.makeText(this, R.string.toast_quicknote_imported, Toast.LENGTH_SHORT).show()
                     }

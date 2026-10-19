@@ -1,0 +1,3 @@
+v5.6
+
+• Loading or importing a quick note now resets the undo history.

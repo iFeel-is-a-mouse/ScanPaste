@@ -80,6 +80,22 @@ class EditorViewModel : ViewModel() {
         refreshButtonStates()
     }
 
+    /**
+     * Replaces the whole document with [newText] and resets the undo history.
+     *
+     * Use this for loading or importing a note: the previous undo entries
+     * describe edits of a document that no longer exists, so keeping them
+     * would make undo fail (or delete the wrong range).
+     */
+    fun replaceText(newText: String) {
+        undoStack.clear()
+        redoStack.clear()
+        _text.value = newText
+        _undoFailed.value = false
+        refreshButtonStates()
+    }
+
+    /** Edits made by the user directly in the editor; keeps undo history intact. */
     fun updateTextManually(newText: String) {
         _text.value = newText
         refreshButtonStates()
