@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- app_name is intentionally absent: the launcher label always falls back to "ScanPaste". -->
-    <string name="app_version">v5.6</string>
+    <string name="app_version">v5.7</string>
     <string name="editor_hint">点击追加按钮扫码录入，或直接输入文本</string>
 
     <string name="ui_title">扫码笔记</string>
@@ -60,7 +60,6 @@
     <string name="dialog_cancel">取消</string>
     <string name="dialog_authorize">授权</string>
 
-    <string name="toast_undo_changed">追加内容已被修改，无法撤销</string>
     <string name="toast_qr_not_found">未识别到二维码</string>
     <string name="toast_qr_decode_failed">图片解码失败</string>
 

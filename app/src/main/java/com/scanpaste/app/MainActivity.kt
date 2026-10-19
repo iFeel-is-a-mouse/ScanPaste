@@ -107,6 +107,12 @@ class MainActivity : AppCompatActivity() {
         setupObservers()
         setupClickListeners()
         setupTextWatcher()
+        // Restore the private quick note as the baseline document (no history).
+        // Only runs when the file exists, so first launch stays empty and never
+        // opens a file picker.
+        if (savedInstanceState == null && QuickNoteStorage.mainFile(this).exists()) {
+            loadQuickNote(recordHistory = false)
+        }
         // Only handle the launch intent on first creation: recreate() (language switch)
         // must not reload the quick note over unsaved edits.
         if (savedInstanceState == null) handleIntent(intent)
@@ -119,7 +125,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent) {
         if (intent.getBooleanExtra(QuickNoteWidgetProvider.EXTRA_LOAD_QUICKNOTE, false)) {
-            loadQuickNote()
+            loadQuickNote(recordHistory = false)
         }
     }
 
@@ -129,12 +135,6 @@ class MainActivity : AppCompatActivity() {
         }
         viewModel.canUndo.observe(this) { binding.btnUndo.isEnabled = it }
         viewModel.canRedo.observe(this) { binding.btnRedo.isEnabled = it }
-        viewModel.undoFailed.observe(this) { failed ->
-            if (failed) {
-                Toast.makeText(this, R.string.toast_undo_changed, Toast.LENGTH_SHORT).show()
-                viewModel.onUndoFailedHandled()
-            }
-        }
     }
 
     private fun setupClickListeners() {
@@ -325,10 +325,17 @@ class MainActivity : AppCompatActivity() {
         QuickNoteWidgetProvider.sendUpdateBroadcast(this)
     }
 
-    private fun loadQuickNote() {
+    /**
+     * Loads the private quick note into the editor.
+     *
+     * @param recordHistory true for an explicit user action (Read/import), so
+     *   the previous content stays reachable via undo; false for launch/widget
+     *   loads, which establish the baseline document.
+     */
+    private fun loadQuickNote(recordHistory: Boolean = true) {
         val text = QuickNoteStorage.read(this)
         if (text != null) {
-            viewModel.replaceText(text)
+            if (recordHistory) viewModel.replaceText(text) else viewModel.setInitialText(text)
             moveCursorToEnd()
             return
         }
@@ -339,6 +346,9 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.toast_quicknote_read_failed, Toast.LENGTH_SHORT).show()
             return
         }
+
+        // Automatic loads must never fall through to the import flow.
+        if (!recordHistory) return
 
         discoverLegacyQuickNote()
     }

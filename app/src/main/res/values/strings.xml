@@ -2,7 +2,7 @@
 <resources>
     <!-- Desktop launcher label is fixed to ScanPaste in every language. -->
     <string name="app_name" translatable="false">ScanPaste</string>
-    <string name="app_version">v5.6</string>
+    <string name="app_version">v5.7</string>
     <string name="editor_hint">Tap Scan to add text from a QR code, or type here</string>
 
     <string name="ui_title">ScanPaste</string>
@@ -16,7 +16,7 @@
 
     <string name="btn_clear">Clear</string>
     <string name="btn_save">Save</string>
-    <string name="btn_quicknote">Note</string>
+    <string name="btn_quicknote">QuickS</string>
     <string name="btn_game">🎮</string>
     <string name="btn_readnote">Read</string>
     <string name="btn_copy">Copy</string>
@@ -24,7 +24,7 @@
     <string name="toast_quicknote_saved">Saved to app storage</string>
     <string name="toast_quicknote_not_found">Quick note not found</string>
     <string name="toast_quicknote_read_failed">Could not read quick note</string>
-    <string name="toast_quicknote_imported">Imported. Tap Note to save it.</string>
+    <string name="toast_quicknote_imported">Imported. Tap QuickS to save it.</string>
     <string name="toast_quicknote_pick_cancelled">No file selected</string>
 
     <string name="legacy_import_title">Old quick note found</string>
@@ -61,7 +61,6 @@
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_authorize">Allow</string>
 
-    <string name="toast_undo_changed">The appended text was edited, so it cannot be undone</string>
     <string name="toast_qr_not_found">No QR code found</string>
     <string name="toast_qr_decode_failed">Could not decode the image</string>
 

@@ -3,10 +3,13 @@ package com.scanpaste.app.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.scanpaste.app.model.AppendHistory
 
 /**
- * ViewModel managing editor text state and undo/redo stacks.
+ * ViewModel managing editor text state and undo/redo history.
+ *
+ * History is stored as full-text snapshots rather than append records. Every
+ * committed change (manual typing, scan append, clear, quick note load/import)
+ * can therefore be undone and redone, regardless of how the text was edited.
  */
 class EditorViewModel : ViewModel() {
 
@@ -19,128 +22,75 @@ class EditorViewModel : ViewModel() {
     private val _canRedo = MutableLiveData(false)
     val canRedo: LiveData<Boolean> = _canRedo
 
-    private val _undoFailed = MutableLiveData(false)
-    val undoFailed: LiveData<Boolean> = _undoFailed
+    /** Full-text states from before each change, oldest first. */
+    private val undoStack = ArrayDeque<String>()
 
-    private val undoStack = ArrayDeque<AppendHistory>()
-    private val redoStack = ArrayDeque<AppendHistory>()
+    /** Full-text states from after each change, oldest first. */
+    private val redoStack = ArrayDeque<String>()
 
     fun appendText(scannedText: String) {
         if (scannedText.isEmpty()) return
-        val current = _text.value ?: ""
-        pushUndo(AppendHistory(position = current.length, text = scannedText))
-        redoStack.clear()
-        _text.value = current + scannedText
-        refreshButtonStates()
+        commit((_text.value ?: "") + scannedText)
     }
 
     fun undo() {
         if (undoStack.isEmpty()) return
-        val history = undoStack.removeLast()
         val current = _text.value ?: ""
-
-        // Handle "clear" undo: if position=0 and text was cleared,
-        // restore the full text from the snapshot
-        if (history.position == 0 && current.isEmpty()) {
-            _text.value = history.text
-            redoStack.addLast(AppendHistory(position = 0, text = ""))  // redo=clear again
-            trimStack(redoStack)
-            refreshButtonStates()
-            return
-        }
-
-        if (deleteTextAt(current, history.position, history.text)) {
-            redoStack.addLast(history)
-            trimStack(redoStack)
-            refreshButtonStates()
-        } else {
-            undoStack.addLast(history)
-            _undoFailed.value = true
-        }
+        redoStack.addLast(current)
+        trimStack(redoStack)
+        _text.value = undoStack.removeLast()
+        refreshButtonStates()
     }
 
     fun redo() {
         if (redoStack.isEmpty()) return
-        val history = redoStack.removeLast()
         val current = _text.value ?: ""
-
-        // Handle "clear" redo: redo empty text → clear again
-        if (history.position == 0 && history.text.isEmpty()) {
-            undoStack.addLast(AppendHistory(position = 0, text = current))  // undo=restore
-            _text.value = ""
-            trimStack(undoStack)
-            refreshButtonStates()
-            return
-        }
-
-        val insertPos = history.position.coerceAtMost(current.length)
-        _text.value = current.substring(0, insertPos) + history.text + current.substring(insertPos)
-        undoStack.addLast(history)
+        undoStack.addLast(current)
         trimStack(undoStack)
+        _text.value = redoStack.removeLast()
         refreshButtonStates()
+    }
+
+    /** Edits made by the user directly in the editor; every edit is undoable. */
+    fun updateTextManually(newText: String) {
+        commit(newText)
+    }
+
+    /** Replaces the document (quick note read/import) as an undoable change. */
+    fun replaceText(newText: String) {
+        commit(newText)
     }
 
     /**
-     * Replaces the whole document with [newText] and resets the undo history.
+     * Sets the document without recording history.
      *
-     * Use this for loading or importing a note: the previous undo entries
-     * describe edits of a document that no longer exists, so keeping them
-     * would make undo fail (or delete the wrong range).
+     * Used for the automatic load at launch: the restored note is the baseline
+     * state, so there is nothing before it to undo.
      */
-    fun replaceText(newText: String) {
+    fun setInitialText(newText: String) {
         undoStack.clear()
         redoStack.clear()
         _text.value = newText
-        _undoFailed.value = false
         refreshButtonStates()
     }
 
-    /** Edits made by the user directly in the editor; keeps undo history intact. */
-    fun updateTextManually(newText: String) {
+    fun clearAll() {
+        if ((_text.value ?: "").isEmpty()) return
+        commit("")
+    }
+
+    private fun commit(newText: String) {
+        val current = _text.value ?: ""
+        if (newText == current) return
+        undoStack.addLast(current)
+        if (undoStack.size > MAX_HISTORY) undoStack.removeFirst()
+        redoStack.clear()
         _text.value = newText
         refreshButtonStates()
     }
 
-    fun onUndoFailedHandled() {
-        _undoFailed.value = false
-    }
-
-    fun clearAll() {
-        val current = _text.value ?: ""
-        if (current.isEmpty()) return
-        // Save full text as undoable snapshot (position=0 triggers clear restore)
-        pushUndo(AppendHistory(position = 0, text = current))
-        redoStack.clear()
-        _text.value = ""
-        refreshButtonStates()
-    }
-
-    private fun pushUndo(history: AppendHistory) {
-        if (undoStack.size >= MAX_HISTORY) undoStack.removeFirst()
-        undoStack.addLast(history)
-    }
-
-    private fun trimStack(stack: ArrayDeque<AppendHistory>) {
+    private fun trimStack(stack: ArrayDeque<String>) {
         while (stack.size > MAX_HISTORY) stack.removeFirst()
-    }
-
-    private fun deleteTextAt(text: String, position: Int, historyText: String): Boolean {
-        val len = historyText.length
-        if (position + len <= text.length && text.substring(position, position + len) == historyText) {
-            _text.value = text.removeRange(position, position + len)
-            return true
-        }
-        val availableLen = (text.length - position).coerceAtLeast(0)
-        if (availableLen > 0 && text.substring(position, position + availableLen) == historyText.take(availableLen)) {
-            _text.value = text.removeRange(position, position + availableLen)
-            return true
-        }
-        val foundIndex = text.indexOf(historyText)
-        if (foundIndex >= 0) {
-            _text.value = text.removeRange(foundIndex, foundIndex + len)
-            return true
-        }
-        return false
     }
 
     private fun refreshButtonStates() {
@@ -149,6 +99,6 @@ class EditorViewModel : ViewModel() {
     }
 
     companion object {
-        const val MAX_HISTORY = 100
+        const val MAX_HISTORY = 200
     }
 }

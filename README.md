@@ -16,7 +16,7 @@ network permission.
 
 - **扫码追加**：拍照或从相册选图，二维码内容追加到文末。
 - **编辑**：全选、复制、剪切、粘贴；长文本可滚动。
-- **撤销/重做**：追加和清空操作可回退，最多 100 步。
+- **撤销/重做**：每次编辑、追加、清空都可回退/重做，最多 200 步。
 - **保存与速记**：可另存为 txt、md、csv、json 等文件；速记保存在应用私有目录，可用「保存」导出到 Documents。
 - **桌面小部件**：展示速记内容，可缩放、滚动，点击打开应用。
 - **纯离线**：ZXing 在设备本地解码，应用没有 INTERNET 权限。
@@ -28,11 +28,13 @@ network permission.
   The decoded text is appended to the end of the note.
 - **Editing** — select all, copy, cut, and paste. Fixed 18sp text, scrollable for
   long notes.
-- **Undo and redo** — append and clear actions can be undone, up to 100 steps.
+- **Undo and redo** — every edit, append, and clear can be undone and redone,
+  up to 200 steps.
 - **Copy** — copy the whole note to the clipboard in one tap.
 - **Save as file** — choose a filename and extension (txt, md, csv, json, and so
   on). Files go to Documents by default.
-- **Quick note and quick read** — the quick note lives in app-private storage.
+- **Quick note and quick read** — the quick note lives in app-private storage and
+  is loaded automatically when the app starts.
   If it exists, the app asks before overwriting and keeps five backups
   (`quicknote-1.txt` … `quicknote-5.txt`). Use **Save** to export a copy to
   Documents; **Quick read** can import an existing text file.
@@ -72,7 +74,7 @@ the gallery does not need the camera.
 2. Choose **拍照扫码 (Camera)** or **从相册选择 (Gallery)**.
 3. Edit the note as needed. **复制 (Copy)**, **撤销 (Undo)**, and **重做 (Redo)**
    are in the bottom bar.
-4. Tap **保存 (Save)** to write a file, or **速记 (Quick note)** to update the
+4. Tap **保存 (Save)** to write a file, or **速记 (QuickS)** to update the
    app-private quick note. Use Save to export a copy to Documents.
    **Quick read replaces the editor with the saved quick note; save unsaved
    text first.**
@@ -177,6 +179,7 @@ file, `assembleRelease` produces an unsigned APK.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v5.7 | 2026-10-19 | 全文 undo/redo；启动自动读速记；英文按钮 Note → QuickS |
 | v5.6 | 2026-10-19 | 速读/导入速记后重置撤销历史，避免出现无法撤销的提示 |
 | v5.5 | 2026-10-19 | 速记改存应用私有目录；5 个备份；速读可导入旧文件；保存导出到 Documents |
 | v5.3 | 2026-10-19 | 修复速记文件缺失时速读/小部件 ENOENT；增加路径兼容与友好提示 |

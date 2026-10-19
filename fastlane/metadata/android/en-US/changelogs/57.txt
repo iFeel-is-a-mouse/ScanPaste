@@ -1,0 +1,5 @@
+v5.7
+
+• Every edit can now be undone and redone.
+• The quick note loads automatically on launch.
+• The Note button is now QuickS.

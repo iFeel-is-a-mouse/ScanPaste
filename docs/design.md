@@ -172,38 +172,33 @@ class MainActivity : AppCompatActivity() {
 
 ### 3.2 EditorViewModel
 
-**关键方法（v4.2）**：
+**关键方法（v5.7）**：
 
 ```kotlin
 class EditorViewModel : ViewModel() {
     val text: LiveData<String>
     val canUndo: LiveData<Boolean>
     val canRedo: LiveData<Boolean>
-    val undoFailed: LiveData<Boolean>    // 单次事件：撤销失败时 toast
 
-    fun appendText(scannedText: String)  // 追加 + 清空 redoStack
-    fun undo()                           // 含 clear 恢复的特殊处理
-    fun redo()                           // 含 clear 重做的特殊处理
-    fun clearAll()                       // 全文快照保存到 undoStack
-    fun updateTextManually(newText: String)
-    fun onUndoFailedHandled()            // 消费 undoFailed 事件
+    fun appendText(scannedText: String)  // commit(current + text)
+    fun undo()                           // 恢复上一个全文快照
+    fun redo()                           // 恢复下一个全文快照
+    fun clearAll()                       // commit("")
+    fun updateTextManually(newText: String) // 每次编辑 commit，可撤销
+    fun replaceText(newText: String)     // 速读/导入，可撤销
+    fun setInitialText(newText: String)  // 启动基线，清空历史
 
-    private fun pushUndo(history)
-    private fun trimStack(stack)         // FIFO 淘汰 >100 条
-    private fun deleteTextAt(text, pos, historyText): Boolean  // 三重容错
+    private fun commit(newText: String)  // push current -> undoStack; trim 200; clear redo
     private fun refreshButtonStates()
 }
 ```
 
-**clearAll 特殊机制**: 清空前将全文以 `AppendHistory(position=0, text=全文)` 保存到 undoStack。撤销时检测 `position==0 && current.isEmpty()` → 恢复全文快照。
-
-### 3.3 AppendHistory
+### 3.3 AppendHistory（历史模型，v5.7 起 EditorViewModel 不再使用）
 
 ```kotlin
 data class AppendHistory(val position: Int, val text: String)
 ```
-- position >= 0（init 校验）
-- text 可为空（用于 "clear" redo 条目）
+- 保留模型与单测；运行时撤销历史改为全文 `String` 快照。
 
 ### 3.4 QrCodeScanner
 
@@ -220,34 +215,41 @@ WebView 加载 `rabbitjump.html`，通过 `AndroidBridge` 提供 4 个 JS 接口
 
 AppWidget 组件：ListView 展示 quicknote.txt 内容，圆角 + 10% 透明背景，点击打开文件。
 
-## 4. Undo/Redo 算法
+## 4. Undo/Redo 算法（v5.7）
 
-双栈分离模型，额外支持清空操作的特殊处理：
+全文快照双栈：
 
-```
-clearAll():
-  undoStack.push(AppendHistory(0, 全文快照))
+```text
+undoStack: ArrayDeque<String>  // 每次变化前的全文
+redoStack: ArrayDeque<String>  // 被撤销的全文
+
+commit(newText):
+  if newText == current: return
+  undoStack.push(current)
+  if undoStack.size > 200: undoStack.removeFirst()
   redoStack.clear()
-  text = ""
+  text = newText
 
-undo (clear恢复):
-  if (position==0 && current.isEmpty()):
-    text = history.text           // 恢复全文
-    redoStack.push(AppendHistory(0, ""))  // redo=再清空
+undo():
+  if undoStack.empty: return
+  redoStack.push(current)
+  text = undoStack.pop()
 
-redo (clear重做):
-  if (position==0 && text.isEmpty()):
-    undoStack.push(AppendHistory(0, current))  // undo=恢复
-    text = ""                                  // 再清空
+redo():
+  if redoStack.empty: return
+  undoStack.push(current)
+  text = redoStack.pop()
 ```
 
-容错策略：deleteTextAt() 三重匹配 → 精确位置 → 部分匹配 → 全文搜索 → Toast 失败。
+- 手动输入、扫码追加、清空、速读/导入都走 `commit`，因此都可撤销/重做。
+- 启动自动加载走 `setInitialText`，作为基线，不进入历史。
+- 不再有“追加文本被修改导致撤销失败”的 Toast。
 
-## 5. 布局要点（v4.2）
+## 5. 布局要点（v5.7）
 
 - **Edge-to-edge**: 透明状态栏 + `status_bar_spacer`(蓝色, 动态高度) + IME insets 处理
 - **NestedScrollView**: fillViewport, 键盘自适应 via adjustResize
-- **Toolbar**: 32dp 紧凑高度, 蓝色背景, 右侧4个操作按钮(清空/速读/速记/保存)
+- **Toolbar**: 32dp 紧凑高度, 蓝色背景, 右侧5个操作按钮(清空/复制/速读/速记/保存)
 - **编辑区**: 固定 18sp, 16dp横/12dp纵 padding, textIsSelectable
 - **底部栏**: MaterialCardView elevation=4dp, 5等份(Undo/Redo/Append权重各1 + Gallery固定48dp)
 - **底部安全区**: `updatePadding(bottom=systemBars.bottom)`
@@ -258,7 +260,7 @@ redo (clear重做):
 |---|------|------|
 | ADR1 | ZXing 非 ML Kit | 纯离线，无模型下载 |
 | ADR2 | 独立 CaptureActivity 扫码 | 无需管理相机生命周期 |
-| ADR3 | Undo/Redo 双栈 + clear 快照 | 标准模式 + 清空可恢复 |
+| ADR3 | 全文快照 Undo/Redo 双栈 | 每次编辑可撤销/重做；200 步；实现简单可靠 |
 | ADR4 | 固定 18sp 字号 | 简洁可靠，避免自适应复杂度 |
 | ADR5 | 速记 App 私有存储 | 无权限、不受 MediaStore 归属影响；旧 Documents 速记可导入 |
 | ADR6 | game.txt 配置化 | 用户可自定义游戏角色，重启生效 |
