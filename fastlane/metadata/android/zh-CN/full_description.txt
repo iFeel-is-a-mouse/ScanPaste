@@ -24,4 +24,4 @@ Android 7.0（API 24）及以上。只有扫码时会申请相机权限，从相
 
 许可证
 
-GPL-3.0-or-later。源码：https://github.com/iFeel-is-a-mouse/scanpaste
+MIT License。源码：https://github.com/iFeel-is-a-mouse/ScanPaste

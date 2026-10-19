@@ -24,4 +24,4 @@ Android 7.0 (API 24) or newer. Camera permission is requested only for scanning.
 
 License
 
-GPL-3.0-or-later. Source code: https://github.com/iFeel-is-a-mouse/scanpaste
+MIT License. Source code: https://github.com/iFeel-is-a-mouse/ScanPaste

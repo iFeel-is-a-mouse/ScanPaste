@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/icon.png" width="96" alt="ScanPaste icon">
+</p>
+
 # ScanPaste · 扫码笔记
+
+[![GitHub](https://img.shields.io/badge/GitHub-iFeel--is--a--mouse%2FScanPaste-181717?logo=github)](https://github.com/iFeel-is-a-mouse/ScanPaste)
 
 ScanPaste is a small offline QR code notebook for Android. Scan a code, and the
 decoded text is appended to the note you are editing. No account, no sync, no
