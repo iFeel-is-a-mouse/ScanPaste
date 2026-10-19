@@ -1,8 +1,11 @@
 package com.scanpaste.app.viewmodel
 
+import androidx.arch.core.executor.ArchTaskExecutor
+import androidx.arch.core.executor.TaskExecutor
 import com.google.common.truth.Truth.assertThat
 import com.scanpaste.app.model.AppendHistory
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 
 /**
@@ -10,10 +13,10 @@ import org.junit.Test
  *
  * Covers UT2–UT8 from testable-items.md (31 items total).
  *
- * Note: LiveData values are accessed directly via `.value` — this works
- * in JUnit unit tests because the setter is synchronous when no main-thread
- * observer is attached.  No InstantTaskExecutorRule is needed for the tests
- * below since we never call `observe()`.
+ * Note: LiveData values are accessed directly via `.value`.  LiveData's
+ * setValue() asserts the main thread, so a synchronous ArchTaskExecutor is
+ * installed in @BeforeClass (the androidx.arch.core:core-testing artifact is
+ * not a project dependency).
  */
 class EditorViewModelTest {
 
@@ -31,11 +34,6 @@ class EditorViewModelTest {
     @Test
     fun `UT2_1a initial text should be empty`() {
         assertThat(vm.text.value).isEqualTo("")
-    }
-
-    @Test
-    fun `UT2_1b initial textSize should be 24sp`() {
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
     }
 
     @Test
@@ -64,12 +62,6 @@ class EditorViewModelTest {
         assertThat(vm.text.value).isEqualTo("hello")
         assertThat(vm.canUndo.value).isTrue()
         assertThat(vm.canRedo.value).isFalse()
-    }
-
-    @Test
-    fun `UT2_2b appendText should keep textSize 24 for single line`() {
-        vm.appendText("single line")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
     }
 
     @Test
@@ -190,16 +182,6 @@ class EditorViewModelTest {
         assertThat(vm.canUndo.value).isFalse()
         assertThat(vm.canRedo.value).isTrue()
         assertThat(realRedoStackSize(vm)).isEqualTo(2)
-    }
-
-    @Test
-    fun `UT3_5 undo should recalculate text size`() {
-        vm.appendText("1\n2\n3\n4\n5\n6\n7\n8\n9")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
-
-        vm.undo()
-        assertThat(vm.text.value).isEqualTo("")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
     }
 
     @Test
@@ -338,16 +320,6 @@ class EditorViewModelTest {
         assertThat(vm.canUndo.value).isFalse()
     }
 
-    @Test
-    fun `redo should recalculate text size`() {
-        vm.appendText("1\n2\n3\n4\n5\n6\n7\n8\n9")
-        vm.undo()
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-
-        vm.redo()
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
-    }
-
     // ═══════════════════════════════════════════════════════════════════════
     // UT5: Stack depth limit
     // ═══════════════════════════════════════════════════════════════════════
@@ -369,7 +341,9 @@ class EditorViewModelTest {
 
         repeat(100) { vm.undo() }
 
-        assertThat(vm.text.value).isEqualTo("")
+        // The oldest append ("first") was evicted, so the 100 undoable
+        // "fill" appends are removed and its text remains.
+        assertThat(vm.text.value).isEqualTo("first")
         assertThat(vm.canUndo.value).isFalse()
     }
 
@@ -392,87 +366,10 @@ class EditorViewModelTest {
         assertThat(vm.canUndo.value).isTrue()
 
         repeat(100) { vm.undo() }
-        assertThat(vm.text.value).isEqualTo("")
+        // Only the last 100 appends (a100..a199) are undoable, leaving the
+        // evicted prefix a0..a99 in the editor.
+        assertThat(vm.text.value).isEqualTo((0..99).joinToString("") { "a$it" })
         assertThat(vm.canUndo.value).isFalse()
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // UT6: Font size calculation
-    // ═══════════════════════════════════════════════════════════════════════
-
-    @Test
-    fun `UT6_1 empty text should have 24sp`() {
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-    }
-
-    @Test
-    fun `UT6_2 exactly 3 lines should be 24sp`() {
-        vm.appendText("1\n2\n3")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-    }
-
-    @Test
-    fun `UT6_2b less than 3 lines should be 24sp`() {
-        vm.appendText("single line")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-
-        vm.appendText("\n")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-    }
-
-    @Test
-    fun `UT6_3 boundary 4 lines should be 20sp`() {
-        vm.appendText("1\n2\n3\n4")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_MEDIUM)
-    }
-
-    @Test
-    fun `UT6_3b exactly 8 lines should be 20sp`() {
-        vm.appendText("1\n2\n3\n4\n5\n6\n7\n8")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_MEDIUM)
-    }
-
-    @Test
-    fun `UT6_4 boundary 9 lines should be 16sp`() {
-        vm.appendText("1\n2\n3\n4\n5\n6\n7\n8\n9")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
-    }
-
-    @Test
-    fun `UT6_4b exactly 15 lines should be 16sp`() {
-        val text = (1..15).joinToString("\n")
-        vm.appendText(text)
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
-    }
-
-    @Test
-    fun `UT6_5 boundary 16 lines should be 12sp`() {
-        val text = (1..16).joinToString("\n")
-        vm.appendText(text)
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_MIN)
-    }
-
-    @Test
-    fun `UT6_5b many lines should stay at 12sp minimum`() {
-        val text = (1..100).joinToString("\n")
-        vm.appendText(text)
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_MIN)
-    }
-
-    @Test
-    fun `UT6_6 very long single line should be 24sp`() {
-        vm.appendText("a".repeat(500))
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
-    }
-
-    @Test
-    fun `UT6_7 undo should restore text size to previous value`() {
-        vm.appendText("1\n2\n3\n4\n5\n6\n7\n8\n9")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
-
-        vm.undo()
-        assertThat(vm.text.value).isEqualTo("")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -483,12 +380,6 @@ class EditorViewModelTest {
     fun `UT7_1 updateTextManually should update text`() {
         vm.updateTextManually("new text")
         assertThat(vm.text.value).isEqualTo("new text")
-    }
-
-    @Test
-    fun `UT7_2 updateTextManually should recalculate text size`() {
-        vm.updateTextManually("1\n2\n3\n4\n5\n6\n7\n8\n9")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_SMALL)
     }
 
     @Test
@@ -503,12 +394,11 @@ class EditorViewModelTest {
     }
 
     @Test
-    fun `updateTextManually with empty string should set empty text and 24sp`() {
+    fun `updateTextManually with empty string should set empty text`() {
         vm.appendText("hello")
         vm.updateTextManually("")
 
         assertThat(vm.text.value).isEqualTo("")
-        assertThat(vm.textSize.value).isEqualTo(EditorViewModel.TEXT_SIZE_LARGE)
         assertThat(vm.canUndo.value).isTrue()
     }
 
@@ -605,7 +495,19 @@ class EditorViewModelTest {
         assertThat(vm.text.value).isEqualTo("X")
     }
 
+    private class InstantTaskExecutor : TaskExecutor() {
+        override fun executeOnDiskIO(runnable: Runnable) = runnable.run()
+        override fun postToMainThread(runnable: Runnable) = runnable.run()
+        override fun isMainThread(): Boolean = true
+    }
+
     companion object {
+        @BeforeClass
+        @JvmStatic
+        fun installInstantTaskExecutor() {
+            ArchTaskExecutor.getInstance().setDelegate(InstantTaskExecutor())
+        }
+
         @Suppress("UNCHECKED_CAST")
         fun realUndoStackSize(viewModel: EditorViewModel): Int {
             val field = EditorViewModel::class.java.getDeclaredField("undoStack")

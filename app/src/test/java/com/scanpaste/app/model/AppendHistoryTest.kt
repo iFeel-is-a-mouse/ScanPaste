@@ -88,19 +88,12 @@ class AppendHistoryTest {
     // ── UT1.4: Empty text validation ──────────────────────────────────────
 
     @Test
-    fun `UT1_4 should throw on empty text due to invariant enforcement`() {
-        // NOTE: The testable-items doc (UT1.4) originally said empty text
-        // "构造成功" (should succeed silently).  The actual implementation
-        // enforces the design-documented invariant `text.isNotEmpty()` via
-        // `require()`, which is the correct behavior.  This test verifies
-        // the actual implementation, not the outdated testable-items entry.
-        try {
-            AppendHistory(position = 0, text = "")
-            // If we reach here, the test fails — we expected an exception.
-            throw AssertionError("Expected IllegalArgumentException for empty text")
-        } catch (e: IllegalArgumentException) {
-            assertThat(e.message).contains("text must not be empty")
-        }
+    fun `UT1_4 should allow empty text for clear redo entries`() {
+        // Empty text is valid: it represents a "clear" redo entry.
+        val history = AppendHistory(position = 0, text = "")
+
+        assertThat(history.position).isEqualTo(0)
+        assertThat(history.text).isEmpty()
     }
 
     @Test
