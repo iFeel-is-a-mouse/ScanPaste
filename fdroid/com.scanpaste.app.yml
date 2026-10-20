@@ -20,7 +20,7 @@ Repo: https://github.com/iFeel-is-a-mouse/ScanPaste.git
 Builds:
   - versionName: '5.8'
     versionCode: 58
-    commit: v5.8
+    commit: aa79fb79937ba7d715c915c59f4e059c4ff10402
     subdir: app
     gradle:
       - 'yes'
