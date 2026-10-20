@@ -233,16 +233,40 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    /**
+     * Decodes a QR code from a picked gallery image.
+     *
+     * Opening the content stream and decoding (including the median-filter
+     * retry) touch disk and run for hundreds of milliseconds, so both happen on
+     * a background thread. Only the UI update returns to the main thread.
+     */
     private fun decodeQrFromUri(uri: Uri) {
-        try {
-            contentResolver.openInputStream(uri)?.use { stream ->
-                val text = qrCodeScanner.decodeQrFromImage(stream)
-                if (text != null) { viewModel.appendText(text); moveCursorToEnd() }
-                else Toast.makeText(this, R.string.toast_qr_not_found, Toast.LENGTH_SHORT).show()
+        Thread {
+            var text: String? = null
+            var failed = false
+            try {
+                val stream = contentResolver.openInputStream(uri)
+                if (stream == null) {
+                    failed = true
+                } else {
+                    stream.use { text = qrCodeScanner.decodeQrFromImage(it) }
+                }
+            } catch (e: Exception) {
+                failed = true
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, R.string.toast_qr_decode_failed, Toast.LENGTH_SHORT).show()
-        }
+
+            val decoded = text
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (decoded != null) {
+                    viewModel.appendText(decoded)
+                    moveCursorToEnd()
+                } else {
+                    val message = if (failed) R.string.toast_qr_decode_failed else R.string.toast_qr_not_found
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
     }
 
     private fun checkAndRequestCameraPermission() {

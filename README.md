@@ -25,7 +25,8 @@ network permission.
 ## Features
 
 - **Scan and append** — scan with the camera or pick an image from the gallery.
-  The decoded text is appended to the end of the note.
+  Photos of screens are retried with a 3×3 median filter. The decoded text is
+  appended to the end of the note.
 - **Editing** — select all, copy, cut, and paste. Fixed 18sp text, scrollable for
   long notes.
 - **Undo and redo** — every edit, append, and clear can be undone and redone,
@@ -179,6 +180,7 @@ file, `assembleRelease` produces an unsigned APK.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v5.9 | 2026-10-20 | 相册扫码增加 3×3 中值滤波重试；解码移到后台线程 |
 | v5.8 | 2026-10-19 | 连续输入合并；撤销快照约 4MB 预算；关闭系统原生撤销避免冲突 |
 | v5.7 | 2026-10-19 | 全文 undo/redo；启动自动读速记；英文按钮 Note → QuickS |
 | v5.6 | 2026-10-19 | 速读/导入速记后重置撤销历史，避免出现无法撤销的提示 |

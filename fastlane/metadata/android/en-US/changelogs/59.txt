@@ -1,0 +1,4 @@
+v5.9
+
+• Gallery QR scanning now retries with a 3×3 median filter, so photos of screens are more reliable.
+• Gallery decoding runs off the main thread.
