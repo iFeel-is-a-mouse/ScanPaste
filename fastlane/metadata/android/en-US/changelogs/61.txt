@@ -1,0 +1,4 @@
+v6.1
+
+• In the game, default lines now follow the app language again; custom lines are unchanged.
+• Code comments on the game screen are now in English. Nothing changes visually.
