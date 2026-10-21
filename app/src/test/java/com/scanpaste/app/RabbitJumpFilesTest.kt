@@ -65,6 +65,77 @@ class RabbitJumpFilesTest {
         assertThat(result.text).doesNotContain(defaultPangram)
     }
 
+    // ── localizePangram ───────────────────────────────────────────────────
+
+    private val chinesePangram = "可爱的小兔子跳过那只懒狐狸"
+    private val knownPangrams = setOf(defaultPangram, chinesePangram)
+
+    @Test
+    fun `localizePangram swaps a Chinese default for English when UI is English`() {
+        val stored = "🐰\n🦊\n$chinesePangram"
+
+        val result = RabbitJumpFiles.localizePangram(stored, defaultPangram, knownPangrams)
+
+        assertThat(result).isEqualTo("🐰\n🦊\n$defaultPangram")
+        assertThat(result).doesNotContain(chinesePangram)
+    }
+
+    @Test
+    fun `localizePangram swaps an English default for Chinese when UI is Chinese`() {
+        val stored = "🐰\n🦊\n$defaultPangram"
+
+        val result = RabbitJumpFiles.localizePangram(stored, chinesePangram, knownPangrams)
+
+        assertThat(result).isEqualTo("🐰\n🦊\n$chinesePangram")
+        assertThat(result).doesNotContain(defaultPangram)
+    }
+
+    @Test
+    fun `localizePangram keeps a user-written pangram untouched`() {
+        val stored = "🐰\n🦊\nmy own pangram"
+
+        val result = RabbitJumpFiles.localizePangram(stored, chinesePangram, knownPangrams)
+
+        assertThat(result).isEqualTo(stored)
+    }
+
+    @Test
+    fun `localizePangram returns text unchanged when it has fewer than three lines`() {
+        val twoLines = "🐰\n🦊"
+
+        assertThat(RabbitJumpFiles.localizePangram(twoLines, chinesePangram, knownPangrams))
+            .isEqualTo(twoLines)
+        assertThat(RabbitJumpFiles.localizePangram("", chinesePangram, knownPangrams)).isEmpty()
+    }
+
+    @Test
+    fun `localizePangram preserves the sprite lines`() {
+        val stored = "🐰\n🦊\n$defaultPangram"
+
+        val lines = RabbitJumpFiles.localizePangram(stored, chinesePangram, knownPangrams).split("\n")
+
+        assertThat(lines).hasSize(3)
+        assertThat(lines[0]).isEqualTo(RabbitJumpFiles.DEFAULT_RABBIT)
+        assertThat(lines[1]).isEqualTo(RabbitJumpFiles.DEFAULT_FOX)
+    }
+
+    @Test
+    fun `localizePangram recognises a default that carries surrounding spaces`() {
+        val stored = "🐰\n🦊\n  $defaultPangram  "
+
+        val result = RabbitJumpFiles.localizePangram(stored, chinesePangram, knownPangrams)
+
+        assertThat(result).isEqualTo("🐰\n🦊\n$chinesePangram")
+    }
+
+    @Test
+    fun `localizePangram keeps a blank third line and unknown lines`() {
+        val stored = "🐰\n🦊\n"
+
+        assertThat(RabbitJumpFiles.localizePangram(stored, chinesePangram, knownPangrams))
+            .isEqualTo(stored)
+    }
+
     // ── defaultGameText format ────────────────────────────────────────────
 
     @Test

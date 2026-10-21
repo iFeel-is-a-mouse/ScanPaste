@@ -46,6 +46,44 @@ object RabbitJumpFiles {
     }
 
     /**
+     * Re-localizes the pangram line of an existing game.txt.
+     *
+     * game.txt stores the pangram, so a file created while the UI was in one
+     * language would keep showing that language after the user switches. The
+     * file cannot be fixed by hand (it lives in the app-private directory), so
+     * the pangram is re-localized in memory: when line 3 is one of
+     * [knownDefaults] (the built-in pangrams of any supported language), it is
+     * replaced by [currentPangram]; a user-written pangram is left alone.
+     * Nothing is written back, otherwise the user's file would flip language.
+     *
+     * Line 1 and 2 (sprites) and the line count are always preserved.
+     *
+     * @param text current file content.
+     * @param currentPangram built-in pangram for the active UI language.
+     * @param knownDefaults every built-in pangram, in any language.
+     * @return [text] with line 3 substituted, or [text] unchanged when it is
+     *   empty, has fewer than 3 lines, or line 3 is not a known default.
+     */
+    fun localizePangram(
+        text: String,
+        currentPangram: String,
+        knownDefaults: Collection<String>
+    ): String {
+        if (text.isEmpty()) return text
+        val lines = text.split("\n")
+        if (lines.size < 3) return text
+
+        val pangram = lines[2].trim()
+        val isBuiltIn = pangram.isNotEmpty() && knownDefaults.any { it.trim() == pangram }
+        if (!isBuiltIn) return text
+
+        val localized = ArrayList<String>(lines.size)
+        localized.addAll(lines)
+        localized[2] = currentPangram
+        return localized.joinToString("\n")
+    }
+
+    /**
      * Decides the effective best.txt content.
      *
      * An existing private file always wins, even when empty: an empty best

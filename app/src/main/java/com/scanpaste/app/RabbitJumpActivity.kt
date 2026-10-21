@@ -90,6 +90,30 @@ class RabbitJumpActivity : AppCompatActivity() {
         )
     }
 
+    /**
+     * Built-in pangrams of every supported UI language.
+     *
+     * Resolved through [createConfigurationContext] because the Activity itself
+     * only carries one language at a time, but all defaults are needed to tell
+     * a stale built-in pangram from a user-written one.
+     */
+    private fun knownPangrams(): Set<String> {
+        val pangrams = linkedSetOf(
+            pangramFor(Locale.SIMPLIFIED_CHINESE),
+            pangramFor(Locale.ENGLISH)
+        )
+        // Never treat the active pangram as unknown if resources add a language.
+        pangrams.add(getString(R.string.rabbit_default_pangram))
+        return pangrams
+    }
+
+    private fun pangramFor(locale: Locale): String {
+        val configuration = Configuration(resources.configuration)
+        configuration.setLocale(locale)
+        return createConfigurationContext(configuration)
+            .getString(R.string.rabbit_default_pangram)
+    }
+
     inner class AndroidBridge(private val storageContext: Context) {
 
         @JavascriptInterface
@@ -107,13 +131,18 @@ class RabbitJumpActivity : AppCompatActivity() {
             "{}"
         }
 
-        /** game.txt content; the localized default is created on first run. */
+        /**
+         * game.txt content; the localized default is created on first run.
+         *
+         * The built-in pangram stored in the file is re-localized in memory so
+         * switching the UI language also switches the pangram. The file is not
+         * rewritten: it may be user configuration.
+         */
         @JavascriptInterface
         fun getGame(): String = try {
-            RabbitJumpStorage.loadGame(
-                storageContext,
-                getString(R.string.rabbit_default_pangram)
-            )
+            val currentPangram = getString(R.string.rabbit_default_pangram)
+            val stored = RabbitJumpStorage.loadGame(storageContext, currentPangram)
+            RabbitJumpFiles.localizePangram(stored, currentPangram, knownPangrams())
         } catch (e: Exception) {
             Log.w(TAG, "Could not load game.txt, using in-memory default", e)
             RabbitJumpFiles.defaultGameText(getString(R.string.rabbit_default_pangram))
