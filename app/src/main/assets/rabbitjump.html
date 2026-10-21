@@ -44,12 +44,12 @@
  */
 var T = {};
 
-/* ────────────── 游戏配置（从 game.txt 加载，默认值来自 Android） ────────────── */
+/* ────────────── Game config (loaded from game.txt, defaults from Android) ────────────── */
 var RABBIT  = '🐰';
 var FOX     = '🦊';
 var PANGRAM = '';
 
-/* ────────────── DOM 引用 ────────────── */
+/* ────────────── DOM references ────────────── */
 var air       = document.getElementById('air');
 var chars     = document.getElementById('chars');
 var ground    = document.getElementById('ground');
@@ -60,7 +60,7 @@ var btn       = document.getElementById('btnJump');
 var bestDisplay = document.getElementById('bestDisplay');
 var backBtn   = document.getElementById('backBtn');
 
-/* ────────────── 桥接调用 ────────────── */
+/* ────────────── Bridge calls ────────────── */
 function callBridge(name, fallback) {
   try {
     if (window.Android && typeof Android[name] === 'function') {
@@ -91,7 +91,7 @@ function levelLabel(n) {
   return format(T.level, [n]);
 }
 
-/* ────────────── 语言文案 ────────────── */
+/* ────────────── UI strings ────────────── */
 function loadStrings() {
   var raw = callBridge('getUiStrings', '');
   if (raw) {
@@ -106,7 +106,7 @@ function loadStrings() {
   backBtn.textContent = T.back || '';
 }
 
-/* ────────────── 游戏配置 ────────────── */
+/* ────────────── Game config ────────────── */
 function loadGameConfig() {
   var data = callBridge('getGame', '');
   if (data) {
@@ -118,7 +118,7 @@ function loadGameConfig() {
   if (!PANGRAM) PANGRAM = T.pangram || '';
 }
 
-/* ────────────── 常量 ────────────── */
+/* ────────────── Constants ────────────── */
 var COLS       = 30;
 var FOX_POS    = 15;
 var FPS        = 10;
@@ -127,7 +127,7 @@ var JUMP_DIST  = 5;
 var JUMP_FRAMES= 4;
 var ROAD       = '~*';
 
-/* ────────────── 游戏状态 ────────────── */
+/* ────────────── Game state ────────────── */
 var rabbitPos  = 0;
 var posAccum   = 0;
 var rabbitState= 'walk';       // 'walk' | 'jump' | 'dead'
@@ -138,7 +138,7 @@ var level      = 1;
 var bestLevel  = 0;
 var bestTime   = '';
 
-/* ────────────── Android 桥接 ────────────── */
+/* ────────────── Android bridge ────────────── */
 function goBack() {
   if (window.Android && typeof Android.back === 'function') {
     Android.back();
@@ -189,12 +189,12 @@ function saveBest() {
   }
 }
 
-/* ────────────── 工具函数 ────────────── */
+/* ────────────── Utilities ────────────── */
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-/* ────────────── 提示系统 ────────────── */
+/* ────────────── Hint system ────────────── */
 function showJumpHint() {
   if (rabbitPos < 11) { statusEl.textContent = T.hintEarly || ''; return; }
   if (rabbitPos > 14) { statusEl.textContent = T.hintLate || ''; return; }
@@ -211,7 +211,7 @@ function hideHint() {
   statusEl.textContent = '';
 }
 
-/* ────────────── 初始化 ────────────── */
+/* ────────────── Initialization ────────────── */
 function showSpeed() {
   speedInfo.textContent = format(T.speedInfo, [levelLabel(level), speed.toFixed(2)]);
 }
@@ -258,7 +258,7 @@ function nextLevel() {
   updateButtonText();
 }
 
-/* ────────────── 跳跃 ────────────── */
+/* ────────────── Jump ────────────── */
 function jump() {
   if (rabbitState === 'dead') { fullReset(); return; }
   if (rabbitState !== 'walk') return;
@@ -276,19 +276,19 @@ function jump() {
   showJumpHint();
 }
 
-/* ────────────── 游戏更新 ────────────── */
+/* ────────────── Game update ────────────── */
 function update() {
-  /* ── 死亡状态：不更新 ── */
+  /* ── Dead state: nothing updates ── */
   if (rabbitState === 'dead') {
     return;
   }
 
-  /* ── 行走状态 ── */
+  /* ── Walking state ── */
   if (rabbitState === 'walk') {
     posAccum += speed;
     rabbitPos = Math.floor(posAccum);
 
-    /* 死亡检测 */
+    /* Death check */
     if (rabbitPos === FOX_POS) {
       rabbitState  = 'dead';
       saveBest();
@@ -304,29 +304,29 @@ function update() {
       return;
     }
 
-    /* 通关检测 */
+    /* Level-clear check */
     if (rabbitPos >= COLS) {
       nextLevel();
       return;
     }
   }
 
-  /* ── 跳跃状态 ── */
+  /* ── Jump state ── */
   if (rabbitState === 'jump') {
     jumpFrame++;
 
-    /* 计算当前帧位置（线性插值） */
+    /* Compute current frame position (linear interpolation) */
     var t       = Math.min(jumpFrame / JUMP_FRAMES, 1);
     var dist    = JUMP_DIST;
     rabbitPos   = Math.round(jumpStart + dist * t);
     posAccum    = rabbitPos;
 
-    /* 跳跃结束 */
+    /* Jump finished */
     if (t >= 1) {
       rabbitPos = jumpStart + dist;
       posAccum  = rabbitPos;
 
-      /* 跳跃落地检测：是否撞到狐狸 */
+      /* Landing check: did we hit the fox */
       if (rabbitPos === FOX_POS) {
         rabbitState  = 'dead';
         saveBest();
@@ -342,13 +342,13 @@ function update() {
         return;
       }
 
-      /* 跳跃落地检测：是否通关 */
+      /* Landing check: level cleared */
       if (rabbitPos >= COLS) {
         nextLevel();
         return;
       }
 
-      /* 安全落地 → 继续行走 */
+      /* Safe landing -> resume walking */
       rabbitState  = 'walk';
       btn.disabled = false;
       hideHint();
@@ -356,13 +356,13 @@ function update() {
   }
 }
 
-/* ────────────── 绘制 ────────────── */
+/* ────────────── Rendering ────────────── */
 function draw() {
   var i;
   var airLine  = '';
   var charLine = '';
 
-  /* ── 天空层：跳跃时显示兔子 ── */
+  /* ── Sky layer: show the rabbit while jumping ── */
   for (i = 0; i < COLS; i++) {
     if (rabbitState === 'jump') {
       var t      = Math.min(jumpFrame / JUMP_FRAMES, 1);
@@ -378,7 +378,7 @@ function draw() {
   }
   air.textContent = airLine;
 
-  /* ── 地面角色层 ── */
+  /* ── Ground character layer ── */
   for (i = 0; i < COLS; i++) {
     if (rabbitState === 'walk' && i === Math.min(rabbitPos, COLS - 1)) {
       charLine += RABBIT;
@@ -390,19 +390,19 @@ function draw() {
   }
   chars.textContent = charLine;
 
-  /* ── 固定装饰 ── */
+  /* ── Static decoration ── */
   ground.textContent  = ROAD.repeat(COLS / 2);
   pangram.textContent = PANGRAM;
 }
 
-/* ────────────── 主循环 ────────────── */
+/* ────────────── Main loop ────────────── */
 function loop() {
   update();
   draw();
   setTimeout(loop, FRAME_MS);
 }
 
-/* ────────────── 事件绑定 ────────────── */
+/* ────────────── Event wiring ────────────── */
 btn.addEventListener('click', jump);
 document.addEventListener('touchstart', function(e) {
   if (e.target.tagName !== 'BUTTON') {
@@ -410,7 +410,7 @@ document.addEventListener('touchstart', function(e) {
   }
 });
 
-/* ────────────── 启动 ────────────── */
+/* ────────────── Startup ────────────── */
 loadStrings();
 loadGameConfig();
 loadBest();
