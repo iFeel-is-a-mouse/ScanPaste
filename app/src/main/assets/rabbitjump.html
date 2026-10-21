@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Rabbit Jump</title>
+<title></title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -23,8 +23,8 @@
 </head>
 <body>
 <div class="topbar">
-  <button class="back-btn" onclick="goBack()">← 返回</button>
-  <div class="best" id="bestDisplay">🏆 --</div>
+  <button class="back-btn" id="backBtn" onclick="goBack()"></button>
+  <div class="best" id="bestDisplay"></div>
 </div>
 <pre id="air"></pre>
 <pre id="chars"></pre>
@@ -32,36 +32,22 @@
 <pre id="pangram" class="road"></pre>
 <pre id="status" class="status"></pre>
 <div class="speed" id="speedInfo"></div>
-<button id="btnJump">跳跃</button>
+<button id="btnJump"></button>
 
 <script>
 'use strict';
 
-/* ────────────── 游戏配置（从 game.txt 加载，带默认值兜底） ────────────── */
+/*
+ * No user-visible copy is hardcoded in this file. All labels arrive from
+ * Android.getUiStrings() (strings.xml / values-zh) and the sprite + pangram
+ * configuration arrives from Android.getGame() (game.txt).
+ */
+var T = {};
+
+/* ────────────── 游戏配置（从 game.txt 加载，默认值来自 Android） ────────────── */
 var RABBIT  = '🐰';
 var FOX     = '🦊';
-var PANGRAM = 'The cute rabbit jumps over the lazy fox';
-
-function loadGameConfig() {
-  if (window.Android && typeof Android.getGame === 'function') {
-    var data = Android.getGame();
-    if (data) {
-      var lines = data.split('\n');
-      if (lines.length >= 1 && lines[0].trim()) RABBIT  = lines[0].trim();
-      if (lines.length >= 2 && lines[1].trim()) FOX     = lines[1].trim();
-      if (lines.length >= 3 && lines[2].trim()) PANGRAM = lines[2].trim();
-    }
-  }
-}
-
-/* ────────────── 常量 ────────────── */
-var COLS       = 30;
-var FOX_POS    = 15;
-var FPS        = 10;
-var FRAME_MS   = 1000 / FPS;
-var JUMP_DIST  = 5;
-var JUMP_FRAMES= 4;
-var ROAD       = '~*';
+var PANGRAM = '';
 
 /* ────────────── DOM 引用 ────────────── */
 var air       = document.getElementById('air');
@@ -72,6 +58,74 @@ var statusEl  = document.getElementById('status');
 var speedInfo = document.getElementById('speedInfo');
 var btn       = document.getElementById('btnJump');
 var bestDisplay = document.getElementById('bestDisplay');
+var backBtn   = document.getElementById('backBtn');
+
+/* ────────────── 桥接调用 ────────────── */
+function callBridge(name, fallback) {
+  try {
+    if (window.Android && typeof Android[name] === 'function') {
+      var value = Android[name]();
+      return value === undefined || value === null ? fallback : value;
+    }
+  } catch (e) {
+    /* fall through to the fallback value */
+  }
+  return fallback;
+}
+
+/*
+ * Replaces positional %n$s / %n$d placeholders only (1-based, e.g. %1$s %2$d).
+ * Do NOT use bare %s / %d, width or flag modifiers (%1$02d), or %% here:
+ * they are not supported and would be rendered literally. The same restriction
+ * applies to every value in strings.xml that is pushed through this function.
+ */
+function format(template, args) {
+  if (!template) return '';
+  return template.replace(/%(\d+)\$[sd]/g, function(match, index) {
+    var value = args[parseInt(index, 10) - 1];
+    return value === undefined || value === null ? '' : String(value);
+  });
+}
+
+function levelLabel(n) {
+  return format(T.level, [n]);
+}
+
+/* ────────────── 语言文案 ────────────── */
+function loadStrings() {
+  var raw = callBridge('getUiStrings', '');
+  if (raw) {
+    try {
+      T = JSON.parse(raw) || {};
+    } catch (e) {
+      T = {};
+    }
+  }
+  document.documentElement.lang = T.lang || 'en';
+  document.title = T.title || '';
+  backBtn.textContent = T.back || '';
+}
+
+/* ────────────── 游戏配置 ────────────── */
+function loadGameConfig() {
+  var data = callBridge('getGame', '');
+  if (data) {
+    var lines = data.split('\n');
+    if (lines.length >= 1 && lines[0].trim()) RABBIT  = lines[0].trim();
+    if (lines.length >= 2 && lines[1].trim()) FOX     = lines[1].trim();
+    if (lines.length >= 3 && lines[2].trim()) PANGRAM = lines[2].trim();
+  }
+  if (!PANGRAM) PANGRAM = T.pangram || '';
+}
+
+/* ────────────── 常量 ────────────── */
+var COLS       = 30;
+var FOX_POS    = 15;
+var FPS        = 10;
+var FRAME_MS   = 1000 / FPS;
+var JUMP_DIST  = 5;
+var JUMP_FRAMES= 4;
+var ROAD       = '~*';
 
 /* ────────────── 游戏状态 ────────────── */
 var rabbitPos  = 0;
@@ -92,27 +146,25 @@ function goBack() {
 }
 
 function loadBest() {
-  if (window.Android && typeof Android.getBest === 'function') {
-    var data = Android.getBest();
-    if (data) {
-      var parts = data.split(',');
-      bestLevel = parseInt(parts[0], 10) || 0;
-      bestTime  = parts[1] || '';
-    }
+  var data = callBridge('getBest', '');
+  if (data) {
+    var parts = data.split(',');
+    bestLevel = parseInt(parts[0], 10) || 0;
+    bestTime  = parts[1] || '';
   }
   updateBestDisplay();
 }
 
 function updateBestDisplay() {
   if (bestLevel > 0) {
-    bestDisplay.textContent = '\u{1F3C6} ' + bestLevel + '\u5173 ' + bestTime;
+    bestDisplay.textContent = format(T.bestFormat, [levelLabel(bestLevel), bestTime]);
   } else {
-    bestDisplay.textContent = '\u{1F3C6} --';
+    bestDisplay.textContent = T.bestEmpty || '';
   }
 }
 
 function updateButtonText() {
-  btn.textContent = RABBIT + ' 跳跃';
+  btn.textContent = RABBIT + (T.jump ? ' ' + T.jump : '');
 }
 
 function saveBest() {
@@ -128,8 +180,10 @@ function saveBest() {
     bestLevel = level;
     bestTime  = timeStr;
     updateBestDisplay();
-    statusEl.textContent = '\u{1F389} \u65B0\u7EAA\u5F55\uFF01\u7B2C' + bestLevel + '\u5173 ' + bestTime;
+    statusEl.textContent = format(T.newRecord, [levelLabel(bestLevel)]) +
+      (bestTime ? ' ' + bestTime : '');
     if (window.Android && typeof Android.saveBest === 'function') {
+      // Returns false when the write failed; the Activity logs it.
       Android.saveBest(bestLevel + ',' + bestTime);
     }
   }
@@ -142,15 +196,15 @@ function pad2(n) {
 
 /* ────────────── 提示系统 ────────────── */
 function showJumpHint() {
-  if (rabbitPos < 11) { statusEl.textContent = '别瞎跳'; return; }
-  if (rabbitPos > 14) { statusEl.textContent = '别高兴'; return; }
+  if (rabbitPos < 11) { statusEl.textContent = T.hintEarly || ''; return; }
+  if (rabbitPos > 14) { statusEl.textContent = T.hintLate || ''; return; }
   var landing = jumpStart + JUMP_DIST;
   var gap     = landing - FOX_POS;
 
-  if (gap >= 4)       { statusEl.textContent = '\u{1F3AF} \u7CBE\u51C6\uFF01'; }
-  else if (gap >= 3)  { statusEl.textContent = '\u{1F31F} \u592A\u68D2\uFF01'; }
-  else if (gap >= 2)  { statusEl.textContent = '\u2728 \u7CBE\u5F69\uFF01'; }
-  else if (gap >= 1)  { statusEl.textContent = '\u{1F630} \u592A\u9669\uFF01'; }
+  if (gap >= 4)       { statusEl.textContent = T.hintPerfect || ''; }
+  else if (gap >= 3)  { statusEl.textContent = T.hintGreat || ''; }
+  else if (gap >= 2)  { statusEl.textContent = T.hintNice || ''; }
+  else if (gap >= 1)  { statusEl.textContent = T.hintRisky || ''; }
 }
 
 function hideHint() {
@@ -158,6 +212,10 @@ function hideHint() {
 }
 
 /* ────────────── 初始化 ────────────── */
+function showSpeed() {
+  speedInfo.textContent = format(T.speedInfo, [levelLabel(level), speed.toFixed(2)]);
+}
+
 function init() {
   rabbitPos   = 0;
   posAccum    = -speed + 0.01;
@@ -167,7 +225,7 @@ function init() {
   btn.disabled = false;
   updateButtonText();
   hideHint();
-  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+  showSpeed();
 }
 
 function fullReset() {
@@ -181,15 +239,16 @@ function fullReset() {
   btn.disabled = false;
   updateButtonText();
   hideHint();
-  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+  showSpeed();
 }
 
 function nextLevel() {
   level++;
   speed *= 1.2;
   saveBest();
-  statusEl.textContent = '\u{1F389} \u901A\u5173\uFF01'; setTimeout(hideHint, 1000);
-  speedInfo.textContent = '\u7B2C' + level + '\u5173 \u00B7 \u901F\u5EA6\u00D7' + speed.toFixed(2);
+  statusEl.textContent = T.levelClear || '';
+  setTimeout(hideHint, 1000);
+  showSpeed();
   rabbitPos   = 0;
   posAccum    = -speed + 0.01;
   rabbitState = 'walk';
@@ -206,7 +265,7 @@ function jump() {
 
   // Only positions 11-14 can successfully jump over the fox
   if (rabbitPos < 11 || rabbitPos > 14) {
-    statusEl.textContent = '别瞎跳';
+    statusEl.textContent = T.hintEarly || '';
     setTimeout(hideHint, 800);
   }
 
@@ -240,7 +299,7 @@ function update() {
       var timer = setInterval(function() {
         cd--;
         if (cd > 0) { btn.textContent = '❤️ '.repeat(cd); }
-        else { btn.disabled = false; btn.textContent = '\u{1F504} \u91CD\u6765'; clearInterval(timer); }
+        else { btn.disabled = false; btn.textContent = T.retry || ''; clearInterval(timer); }
       }, 1000);
       return;
     }
@@ -278,7 +337,7 @@ function update() {
         var timer2 = setInterval(function() {
           cd2--;
           if (cd2 > 0) { btn.textContent = '❤️ '.repeat(cd2); }
-          else { btn.disabled = false; btn.textContent = '\u{1F504} \u91CD\u6765'; clearInterval(timer2); }
+          else { btn.disabled = false; btn.textContent = T.retry || ''; clearInterval(timer2); }
         }, 1000);
         return;
       }
@@ -352,6 +411,7 @@ document.addEventListener('touchstart', function(e) {
 });
 
 /* ────────────── 启动 ────────────── */
+loadStrings();
 loadGameConfig();
 loadBest();
 init();

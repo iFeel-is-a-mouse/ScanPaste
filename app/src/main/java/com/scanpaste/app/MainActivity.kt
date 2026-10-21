@@ -3,7 +3,6 @@ package com.scanpaste.app
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.DocumentsContract
-import android.provider.MediaStore
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
@@ -51,7 +49,6 @@ class MainActivity : AppCompatActivity() {
     private var lastRedoTime = 0L
     private var saveFileName = ""
     private var saveExtension = "txt"
-    private var legacyDiscoveryInProgress = false
 
     /** Result of a bounded background read. `text == null && !tooLarge` means failure. */
     private class ImportReadResult(val text: String?, val tooLarge: Boolean)
@@ -376,77 +373,8 @@ class MainActivity : AppCompatActivity() {
         // Automatic loads must never fall through to the import flow.
         if (!recordHistory) return
 
-        discoverLegacyQuickNote()
-    }
-
-    /**
-     * Looks for a quick note written by pre-5.5 versions into shared storage.
-     *
-     * This is a read-only discovery pass: nothing is written, deleted, or
-     * persisted. The MediaStore query runs off the main thread because provider
-     * queries can block on slow storage.
-     */
-    private fun discoverLegacyQuickNote() {
-        if (legacyDiscoveryInProgress) return
-        legacyDiscoveryInProgress = true
-        Thread {
-            val legacyUri = findLegacyQuickNoteUri()
-            runOnUiThread {
-                legacyDiscoveryInProgress = false
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                if (legacyUri != null) {
-                    showLegacyImportDialog(legacyUri)
-                } else {
-                    launchQuickNoteImport()
-                }
-            }
-        }.start()
-    }
-
-    @Suppress("DEPRECATION")
-    private fun findLegacyQuickNoteUri(): Uri? {
-        val collection = MediaStore.Files.getContentUri("external")
-        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
-        val selection: String
-        val selectionArgs: Array<String>
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
-                "${MediaStore.MediaColumns.RELATIVE_PATH} IN (?, ?)"
-            selectionArgs = arrayOf(LEGACY_QUICK_NOTE_NAME, "Documents/scanpaste/", "Documents/scanpaste")
-        } else {
-            // RELATIVE_PATH does not exist before Android 10; fall back to the
-            // absolute path column so pre-scoped-storage installs stay migratable.
-            selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
-                "${MediaStore.MediaColumns.DATA} LIKE ?"
-            selectionArgs = arrayOf(LEGACY_QUICK_NOTE_NAME, "%/Documents/scanpaste/$LEGACY_QUICK_NOTE_NAME")
-        }
-        return try {
-            contentResolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    ContentUris.withAppendedId(collection, cursor.getLong(0))
-                } else {
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun showLegacyImportDialog(uri: Uri) {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.legacy_import_title)
-            .setMessage(R.string.legacy_import_message)
-            .setPositiveButton(R.string.legacy_import_confirm) { _, _ ->
-                // Reuses the same overwrite guard in case the user typed while
-                // the legacy lookup was running.
-                importQuickNote(uri)
-            }
-            .setNegativeButton(R.string.legacy_import_skip) { _, _ ->
-                launchQuickNoteImport()
-            }
-            .setOnCancelListener { launchQuickNoteImport() }
-            .show()
+        // No note yet: let the user pick a file through the system picker.
+        launchQuickNoteImport()
     }
 
     /**
@@ -565,6 +493,5 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val DEBOUNCE_MS = 500L
         private const val MAX_IMPORT_BYTES = 1024 * 1024
-        private const val LEGACY_QUICK_NOTE_NAME = "quicknote.txt"
     }
 }

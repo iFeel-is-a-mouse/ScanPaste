@@ -27,10 +27,6 @@
     <string name="toast_quicknote_imported">Imported. Tap QuickS to save it.</string>
     <string name="toast_quicknote_pick_cancelled">No file selected</string>
 
-    <string name="legacy_import_title">Old quick note found</string>
-    <string name="legacy_import_message">A quick note exists in Documents/scanpaste. Import it?</string>
-    <string name="legacy_import_confirm">Import</string>
-    <string name="legacy_import_skip">Skip</string>
     <string name="import_too_large">File is too large to import</string>
     <string name="import_replace_title">Replace current note?</string>
     <string name="import_replace_message">The editor already has text. Replace it with the imported file?</string>
@@ -80,4 +76,23 @@
     <string name="overwrite_title">Quick note already exists</string>
     <string name="overwrite_message">A quick note already exists. Overwrite it?\n\nA backup will be created first.</string>
     <string name="btn_overwrite">Overwrite</string>
+
+    <!-- Rabbit Jump easter egg. All game copy lives here so the app language switch applies. -->
+    <string name="rabbit_title">Rabbit Jump</string>
+    <string name="rabbit_back">← Back</string>
+    <string name="rabbit_jump">Jump</string>
+    <string name="rabbit_best_empty">🏆 --</string>
+    <string name="rabbit_best_format">🏆 %1$s %2$s</string>
+    <string name="rabbit_level">Lv%1$d</string>
+    <string name="rabbit_new_record">🎉 New record! %1$s</string>
+    <string name="rabbit_level_clear">🎉 Level clear!</string>
+    <string name="rabbit_retry">🔄 Retry</string>
+    <string name="rabbit_hint_early">Don\'t jump yet</string>
+    <string name="rabbit_hint_late">Not so fast</string>
+    <string name="rabbit_hint_perfect">🎯 Perfect!</string>
+    <string name="rabbit_hint_great">🌟 Great!</string>
+    <string name="rabbit_hint_nice">✨ Nice!</string>
+    <string name="rabbit_hint_risky">😰 Too close!</string>
+    <string name="rabbit_speed_info">%1$s · Speed ×%2$s</string>
+    <string name="rabbit_default_pangram">The cute rabbit jumps over the lazy fox</string>
 </resources>

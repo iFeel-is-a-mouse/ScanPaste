@@ -1,17 +1,29 @@
 package com.scanpaste.app
 
-import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
+import android.util.Log
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Locale
 
+/**
+ * Rabbit Jump easter egg.
+ *
+ * The game is an HTML asset; everything it shows is pushed in from Kotlin:
+ * - [AndroidBridge.getUiStrings] carries every user-visible label for the
+ *   current app language (strings.xml / values-zh), so the HTML holds no copy.
+ * - [AndroidBridge.getGame] carries the sprite + pangram configuration from
+ *   game.txt, falling back to the localized default.
+ *
+ * Both save files live in the same app-private directory as the quick note.
+ */
 class RabbitJumpActivity : AppCompatActivity() {
+
+    private var webView: WebView? = null
 
     override fun attachBaseContext(newBase: Context) {
         val locale = Locale(LanguagePrefs.get(newBase))
@@ -25,91 +37,111 @@ class RabbitJumpActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_rabbit_jump)
-        val webView = findViewById<WebView>(R.id.webview)
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.addJavascriptInterface(AndroidBridge(), "Android")
-        webView.loadUrl("file:///android_asset/rabbitjump.html")
+        webView = findViewById<WebView>(R.id.webview).apply {
+            settings.javaScriptEnabled = true
+            addJavascriptInterface(AndroidBridge(applicationContext), BRIDGE_NAME)
+            loadUrl("file:///android_asset/rabbitjump.html")
+        }
     }
 
-    inner class AndroidBridge {
+    override fun onDestroy() {
+        webView?.let { view ->
+            // The JS bridge holds an Application context, but the WebView
+            // itself keeps native resources: remove the interface and destroy
+            // it explicitly instead of waiting for GC.
+            view.removeJavascriptInterface(BRIDGE_NAME)
+            (view.parent as? ViewGroup)?.removeView(view)
+            view.destroy()
+        }
+        webView = null
+        super.onDestroy()
+    }
+
+    /**
+     * Builds the label bundle for the WebView.
+     *
+     * Uses the Activity context on purpose: attachBaseContext applies the
+     * in-app language override to these resources, while applicationContext
+     * would fall back to the system locale.
+     */
+    private fun uiStringsJson(): String {
+        val language = LanguagePrefs.get(this)
+        return RabbitJumpFiles.jsonObject(
+            linkedMapOf(
+                "lang" to if (language == LanguagePrefs.LANG_ZH) "zh-CN" else "en",
+                "title" to getString(R.string.rabbit_title),
+                "back" to getString(R.string.rabbit_back),
+                "jump" to getString(R.string.rabbit_jump),
+                "bestEmpty" to getString(R.string.rabbit_best_empty),
+                "bestFormat" to getString(R.string.rabbit_best_format),
+                "level" to getString(R.string.rabbit_level),
+                "newRecord" to getString(R.string.rabbit_new_record),
+                "levelClear" to getString(R.string.rabbit_level_clear),
+                "retry" to getString(R.string.rabbit_retry),
+                "hintEarly" to getString(R.string.rabbit_hint_early),
+                "hintLate" to getString(R.string.rabbit_hint_late),
+                "hintPerfect" to getString(R.string.rabbit_hint_perfect),
+                "hintGreat" to getString(R.string.rabbit_hint_great),
+                "hintNice" to getString(R.string.rabbit_hint_nice),
+                "hintRisky" to getString(R.string.rabbit_hint_risky),
+                "speedInfo" to getString(R.string.rabbit_speed_info),
+                "pangram" to getString(R.string.rabbit_default_pangram)
+            )
+        )
+    }
+
+    inner class AndroidBridge(private val storageContext: Context) {
+
         @JavascriptInterface
-        fun back() = finish()
+        fun back() {
+            runOnUiThread { finish() }
+        }
+
+        /** All UI copy for the active language, as a JSON object. */
+        @JavascriptInterface
+        fun getUiStrings(): String = try {
+            uiStringsJson()
+        } catch (e: Exception) {
+            // The game stays usable with empty labels rather than crashing.
+            Log.e(TAG, "Could not build UI strings", e)
+            "{}"
+        }
+
+        /** game.txt content; the localized default is created on first run. */
+        @JavascriptInterface
+        fun getGame(): String = try {
+            RabbitJumpStorage.loadGame(
+                storageContext,
+                getString(R.string.rabbit_default_pangram)
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not load game.txt, using in-memory default", e)
+            RabbitJumpFiles.defaultGameText(getString(R.string.rabbit_default_pangram))
+        }
 
         @JavascriptInterface
-        fun getBest(): String {
-            return try {
-                val uri = findUri("best.txt") ?: return ""
-                contentResolver.openInputStream(uri)?.use {
-                    String(it.readBytes(), Charsets.UTF_8).trim()
-                } ?: ""
-            } catch (e: Exception) { "" }
+        fun getBest(): String = try {
+            RabbitJumpStorage.readBest(storageContext)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read best.txt", e)
+            ""
         }
 
+        /**
+         * @return true when best.txt was written. JS does not need the value,
+         * but failures are logged instead of being swallowed.
+         */
         @JavascriptInterface
-        fun saveBest(data: String) {
-            try {
-                val uri = findOrCreateUri("best.txt") ?: return
-                contentResolver.openOutputStream(uri, "wt")?.use {
-                    it.write(data.toByteArray(Charsets.UTF_8))
-                }
-            } catch (_: Exception) {}
+        fun saveBest(data: String): Boolean = try {
+            RabbitJumpStorage.writeBest(storageContext, data)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not save best.txt", e)
+            false
         }
+    }
 
-        @JavascriptInterface
-        fun getGame(): String {
-            return try {
-                val cached = gameCache
-                if (cached != null) return cached
-
-                val uri = findUri("game.txt")
-                if (uri != null) {
-                    val content = contentResolver.openInputStream(uri)?.use {
-                        String(it.readBytes(), Charsets.UTF_8).trim()
-                    } ?: ""
-                    if (content.isNotBlank()) {
-                        gameCache = content
-                        return content
-                    }
-                }
-                // File missing or empty: create the default one
-                val default = "🐰\n🦊\nThe cute rabbit jumps over the lazy fox"
-                val newUri = findOrCreateUri("game.txt") ?: return default
-                contentResolver.openOutputStream(newUri, "wt")?.use {
-                    it.write(default.toByteArray(Charsets.UTF_8))
-                }
-                gameCache = default
-                default
-            } catch (e: Exception) {
-                "🐰\n🦊\nThe cute rabbit jumps over the lazy fox"
-            }
-        }
-
-        private var gameCache: String? = null
-
-        private fun findUri(fileName: String): android.net.Uri? {
-            val sel = "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-            val a = arrayOf("${Environment.DIRECTORY_DOCUMENTS}/scanpaste/", fileName)
-            contentResolver.query(
-                MediaStore.Files.getContentUri("external"),
-                arrayOf(MediaStore.MediaColumns._ID), sel, a, null
-            )?.use { c ->
-                if (c.moveToFirst())
-                    return MediaStore.Files.getContentUri("external").buildUpon()
-                        .appendPath(c.getLong(0).toString()).build()
-            }
-            return null
-        }
-
-        private fun findOrCreateUri(fileName: String): android.net.Uri? {
-            findUri(fileName)?.let { return it }
-            val v = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                put(MediaStore.MediaColumns.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_DOCUMENTS}/scanpaste")
-            }
-            return contentResolver.insert(MediaStore.Files.getContentUri("external"), v)
-        }
+    private companion object {
+        const val TAG = "RabbitJumpActivity"
+        const val BRIDGE_NAME = "Android"
     }
 }

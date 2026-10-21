@@ -24,8 +24,8 @@ android {
         applicationId = "com.scanpaste.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 59
-        versionName = "5.9"
+        versionCode = 60
+        versionName = "6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -77,6 +77,13 @@ android {
             enableSplit = false
         }
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources to resolve strings.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -97,4 +104,5 @@ dependencies {
     // Unit testing
     testImplementation(libs.junit)
     testImplementation(libs.truth)
+    testImplementation(libs.robolectric)
 }

@@ -26,10 +26,6 @@
     <string name="toast_quicknote_imported">已导入，点速记保存</string>
     <string name="toast_quicknote_pick_cancelled">未选择文件</string>
 
-    <string name="legacy_import_title">发现旧速记</string>
-    <string name="legacy_import_message">Documents/scanpaste 里有旧的速记文件，是否导入？</string>
-    <string name="legacy_import_confirm">导入</string>
-    <string name="legacy_import_skip">跳过</string>
     <string name="import_too_large">文件太大，无法导入</string>
     <string name="import_replace_title">替换当前内容？</string>
     <string name="import_replace_message">编辑区已有内容，是否用导入文件替换？</string>
@@ -79,4 +75,23 @@
     <string name="overwrite_title">速记已存在</string>
     <string name="overwrite_message">速记已存在，是否覆盖？\n\n覆盖前会自动备份。</string>
     <string name="btn_overwrite">覆盖</string>
+
+    <!-- Rabbit Jump 彩蛋：游戏内所有文案 -->
+    <string name="rabbit_title">兔子跳跃</string>
+    <string name="rabbit_back">← 返回</string>
+    <string name="rabbit_jump">跳跃</string>
+    <string name="rabbit_best_empty">🏆 --</string>
+    <string name="rabbit_best_format">🏆 %1$s %2$s</string>
+    <string name="rabbit_level">第%1$d关</string>
+    <string name="rabbit_new_record">🎉 新纪录！%1$s</string>
+    <string name="rabbit_level_clear">🎉 通关！</string>
+    <string name="rabbit_retry">🔄 重来</string>
+    <string name="rabbit_hint_early">别瞎跳</string>
+    <string name="rabbit_hint_late">别急</string>
+    <string name="rabbit_hint_perfect">🎯 精准！</string>
+    <string name="rabbit_hint_great">🌟 太棒！</string>
+    <string name="rabbit_hint_nice">✨ 精彩！</string>
+    <string name="rabbit_hint_risky">😰 太险！</string>
+    <string name="rabbit_speed_info">%1$s · 速度×%2$s</string>
+    <string name="rabbit_default_pangram">可爱的小兔子跳过那只懒狐狸</string>
 </resources>

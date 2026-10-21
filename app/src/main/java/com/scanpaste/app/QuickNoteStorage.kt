@@ -28,6 +28,22 @@ object QuickNoteStorage {
     private const val MAIN_TMP_NAME = "quicknote.tmp"
     private const val BACKUP_COUNT = 5
 
+    /** Plain file names only: no separators, no traversal. */
+    private val SAFE_FILE_NAME = Regex("[A-Za-z0-9][A-Za-z0-9._-]*")
+
+    /**
+     * Result of reading a file.
+     *
+     * "The file is not there" and "the file could not be read" are different
+     * facts: only [Missing] may be treated as "no data yet". A [Failed] read
+     * must never cause an existing file to be overwritten.
+     */
+    sealed class FileRead {
+        data class Ok(val text: String) : FileRead()
+        data object Missing : FileRead()
+        data class Failed(val reason: String, val cause: Throwable? = null) : FileRead()
+    }
+
     /** Base directory for all quick-note files. It may not exist yet. */
     fun dir(context: Context): File {
         val base = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
@@ -35,6 +51,57 @@ object QuickNoteStorage {
     }
 
     fun mainFile(context: Context): File = File(dir(context), MAIN_NAME)
+
+    /**
+     * Resolves a sibling file in the same directory as the quick note.
+     *
+     * Shared so other features (Rabbit Jump) do not duplicate the directory
+     * layout, which would drift from the quick note over time.
+     *
+     * @throws IllegalArgumentException when [fileName] is not a plain file name.
+     */
+    fun file(context: Context, fileName: String): File {
+        require(SAFE_FILE_NAME.matches(fileName)) { "Unsafe file name: $fileName" }
+        return File(dir(context), fileName)
+    }
+
+    /**
+     * Reads a sibling file as UTF-8, capped at [maxBytes].
+     *
+     * The cap protects the caller from unbounded reads (a save file is a few
+     * lines). An oversized file is reported as [FileRead.Failed] instead of
+     * being silently truncated, so callers never persist a partial value.
+     */
+    fun readFile(context: Context, fileName: String, maxBytes: Int): FileRead =
+        readLimited(file(context, fileName), maxBytes)
+
+    /** Reads [file] as UTF-8 with the same size cap semantics as [readFile]. */
+    internal fun readLimited(file: File, maxBytes: Int): FileRead {
+        if (!file.exists()) return FileRead.Missing
+        if (!file.isFile) {
+            return FileRead.Failed("Not a regular file: ${file.absolutePath}")
+        }
+        if (file.length() > maxBytes) {
+            return FileRead.Failed("File exceeds $maxBytes bytes: ${file.length()}")
+        }
+        return try {
+            FileRead.Ok(String(file.readBytes(), Charsets.UTF_8))
+        } catch (e: Exception) {
+            FileRead.Failed("Could not read ${file.absolutePath}", e)
+        }
+    }
+
+    /**
+     * Writes a sibling file atomically, using the same temp-file + rename
+     * strategy as [write].
+     *
+     * @return true only when the new content is in place; false never means
+     * "probably fine" — callers must report it.
+     */
+    fun writeFile(context: Context, fileName: String, text: String): Boolean {
+        val target = file(context, fileName)
+        return writeAtomic(context, target, "$fileName.tmp", text)
+    }
 
     /** Backup slot [n] in 1..5. */
     fun backupFile(context: Context, n: Int): File {

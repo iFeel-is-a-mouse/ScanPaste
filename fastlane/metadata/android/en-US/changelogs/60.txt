@@ -1,0 +1,6 @@
+v6.0
+
+• Quick notes and game data now live in the app's private folder; the public Documents folder is no longer read or written.
+• Notes from older versions are no longer imported automatically. Use "Quick Read" and pick the file manually if you need them.
+• In-game prompts and default lines follow the app language.
+• Fixed a bug where a failed high-score or settings write was reported as success.
