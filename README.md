@@ -47,11 +47,12 @@
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_main.jpg" width="240" alt="Main screen">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_save.jpg" width="240" alt="Save dialog">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_save.jpg" width="240" alt="Overwrite confirmation">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_widget.jpg" width="240" alt="Home-screen widget">
 </p>
 
-Left: the editor and the bottom action bar; right: choosing a file name and
-extension when saving.
+Left: the editor and the bottom action bar; middle: confirming an overwrite of
+the quick note; right: the home-screen widget showing the last saved note.
 
 ## Why this exists
 

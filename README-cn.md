@@ -31,10 +31,11 @@
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_main.jpg" width="240" alt="主界面">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_save.jpg" width="240" alt="保存对话框">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_save.jpg" width="240" alt="覆盖速记确认">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_widget.jpg" width="240" alt="桌面小部件">
 </p>
 
-左：编辑区与底部操作栏；右：保存时选择文件名与扩展名。
+左：编辑区与底部操作栏；中：覆盖已有速记的确认框；右：桌面小部件显示上次保存的速记。
 
 ## 为什么用它
 
